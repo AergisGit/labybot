@@ -24,8 +24,12 @@ export interface MapRegion {
     BottomRight: CoordObject;
 }
 
-function mapTileByName(name: string): ChatRoomMapTile {
-    return ChatRoomMapViewTileList.find((tile) => tile.Style === name);
+// Finds a tile by its style name
+function mapTileByName(name: string, type?: string): ChatRoomMapTile {
+    return ChatRoomMapViewTileList.find((tile) => 
+        (type === undefined || tile.Type === type) &&
+        (tile.Style === name)
+    );
 }
 
 function mapObjectByName(name: string): ChatRoomMapObject {
@@ -164,10 +168,10 @@ export class API_Map extends EventEmitter {
         }
     }
 
-    public setTile(pos: CoordObject, tileName: string): void {
+    public setTile(pos: CoordObject, tileName: string, tileType?: string): void {
         if (!this.mapData) return;
 
-        const tile = mapTileByName(tileName);
+        const tile = mapTileByName(tileName, tileType);
 
         const tileNum = pos.X + pos.Y * 40;
         this.mapData.Tiles =

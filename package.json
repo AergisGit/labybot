@@ -1,7 +1,10 @@
 {
-    "name": "ropeybot",
+    "name": "labybot",
+    "version": "1.0.0",
+    "description": "Using the code from ropey bot for bc",
     "license": "Apache-2.0",
     "scripts": {
+        "build": "npm run bundle",
         "types": "tsc",
         "bundle": "esbuild src/main.ts --bundle --platform=node --outfile=out/bundle.js --sourcemap",
         "start": "tsx src/main.ts"
@@ -18,7 +21,7 @@
     "devDependencies": {
         "@tsconfig/node18": "^18.2.1",
         "@types/lodash": "^4.14.198",
-        "@types/node": "^20.6.0",
+        "@types/node": "^20.17.27",
         "esbuild": "^0.19.4",
         "tsx": "^4.19.1",
         "typescript": "^5.2.2"

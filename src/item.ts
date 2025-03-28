@@ -150,7 +150,26 @@ export class API_AppearanceItem {
         lockedBy: number,
         opts: Record<string, any>,
     ): void {
-        if (!this.getAssetDef().AllowLock) return;
+        // Check if the object allows a lock
+        const assetDef = this.getAssetDef();
+        let canLock = assetDef.AllowLock ?? false;
+ 
+        // Checks if the object option allows a lock
+        if (!canLock) {
+            //console.log("Lock - Data Property type record:", this.data?.Property?.TypeRecord);
+            let typedValue = this.data?.Property?.TypeRecord?.typed;
+
+            // Get the current option
+            const currentOption = this.Extended.getExtendedOption(typedValue);
+            console.log("Lock - Extended Def: ", currentOption);
+
+            // If there is a currentOption and it allows a lock
+            if (currentOption?.AllowLock) {
+                canLock = true;
+            }
+        }
+        // Exit if neither the object nor its option allows a lock
+        if (!canLock) return;
 
         this.ensureProps();
         this.data.Property.LockedBy = lockType;
@@ -176,7 +195,7 @@ export class API_AppearanceItem {
     }
 
     public getEffects(): EffectName[] {
-        return this.data.Property?.Effect ?? [];
+                return this.data.Property?.Effect ?? [];
     }
 
     public setRemoved(): void {
@@ -232,10 +251,24 @@ export class ExtendedItem {
             );
         }
         //console.log(`Made extended item for ${item.Group} / ${item.Name}, Extended def is ${this.extendedDef}`);
-    }
+            }
 
     public get Type() {
         return this.item.Property?.Type;
+    }
+
+    public getExtendedOption(typed: number) {
+        // Check if extendedDef has TypedItemConfig or not
+        if (this.extendedDef?.Archetype !== "typed" || !Array.isArray(this.extendedDef.Options)) {
+            //console.warn("CurOpt - invalid or missing Options in extendedDef");
+            return null;
+        }
+    
+        const options = this.extendedDef.Options;
+        //console.log("CurOpt - Extended Def:", JSON.stringify(options, null, 2));
+
+        // retorn option if found
+        return options?.[typed];
     }
 
     public SetText(text: string): void {

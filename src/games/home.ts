@@ -27,9 +27,21 @@ import { BC_Server_ChatRoomMessage } from "../logicEvent";
 
 // Parametrage pour la cartes
 
+// Cartes
+const MAP =
+    "N4IgKgngDgpiBcICCAbA7gQwgZxAGnAEsUZdEA7Sq6m2u+6wLBBmXW32POvufe/+B/QJfAI0WPGjB7IQA85s+QBDlihTKFS2a7StVz1m1uP1DdswAvg5jYeZr96szMvWbdk4/k3bYkxMlehAGDg7QATcIjwl0MgkLFIyOjNWMChBMT/V2DU9IihSiSpcVyogq9GNJLEsoCq6vJC8psGFta29o7WgGue3r7+/oAH4YHRsfGJyYGR3uHBvrmFmZ7F2eWpjc2t6fWNzv2Dw46mk9Oz84vLq+ub27u2QDAQe+evI7fyfBAAeQAjACsYABjAAuZBAdQhkKh0JhsLh8IRiPhgBnoUKAA+hAGvQoVRSMigBBAQBwgIAEEFCgD1AABfpNCgDZAcIAGLJzFxEMAC0As5npQBD0IAmmEAVfBY0IAdI50MFDIiwpFJWFgBpAcKAJCApZFAAEwCUAODCAavgMYAr6HCvJFADToYABQA5ACXIhjeZylQkADsRQBPwAAgkpa20JQBjQN6PRiNelnYHHUrAD/A4RJdUAJCAeqqADhAIYB6+ETuX96QFCSTUMALMDQwAn4IAqYBjoXIoWwRfLFcrVer1cAEsA1huNpvNluttvtjudrsekAAXyAA=";
+const MAPBatCave = 
+    "N4IgKgngDgpiBcICCAbA7gQwgZxAGnAEsUZdEA7SqywLBA76G6rGWHbWO3brzO//GPAcI68hIvoEvgaTNlyZE1pIAeqlWoAhWjeuWTFLXUe07Veg4zlnJJlYAXwO/ov1dZvbeUOnzmq+se1HzorNXlpIOCAYOijABN4hPjvZ0loyLlExMAL4AjUmMzE2Vy0yQKEyUpkiwyy2IryKoNS2sLK3JbWhoju+h4+/oHBoeGRkYBricmp6emAB/mZxaXlldWZhcn52amtnY2J3c39tZPTs/Xjk9Hrm9u78R7Hp+eX17f3j8+vp8AwEG//oL3IFUfAgADyACMAFYwADGABcyCAOh1AAKA6NigAPoQBX0LFADgwgDXoFHE2ro1HxABBADSSbS6fSGQVAHQgjPpgBnoLGAFvhYhzWQVACCAgDhAQAIILFAHqAAC+xbFAGyA8TlYrofJJgAWgFXK2qAIehAE0wgCr4ImxADpGvphoAMYljSaOsbADSA8UASEDWgqAAJhMnjANXwBNxsV1zppJPJJoAS4kCbrNc6ygAdhKAJ+AKbUvVGyoAxoHTKfiBI9BQpebjKcAP8DxUUdQAkIJmOoAOEBRgHr4OtlHMFA2ZeskwAswLTACfggCpgSvxcixbD9kejsfjieTgqACWAp3P5wvF0vlyvV2v1xvKyAAL5AA="
+
+
 // Coordonnées en rectangle, pour former des "régions", pour interraction ulterieure
 
 const RECEPTION_AREA: MapRegion = {
+    TopLeft: { X: 15, Y: 11 },
+    BottomRight: { X: 17, Y: 14 },
+};
+
+const HOME_AREA: MapRegion = {
     TopLeft: { X: 15, Y: 11 },
     BottomRight: { X: 17, Y: 14 },
 };
@@ -76,13 +88,6 @@ const CHANDELIER_MOT_SECRET = new Set([
     "frotte",
     "tire"
 ]);
-
-// cartes
-const MAP =
-    "N4IgKgngDgpiBcICCAbA7gQwgZxAGnAEsUZdEA7Sq6m2u+6wLBBmXW32POvufe/+B/QJfAI0WPGjB7IQA85s+QBDlihTKFS2a7StVz1m1uP1DdswAvg5jYeZr96szMvWbdk4/k3bYkxMlehAGDg7QATcIjwl0MgkLFIyOjNWMChBMT/V2DU9IihSiSpcVyogq9GNJLEsoCq6vJC8psGFta29o7WgGue3r7+/oAH4YHRsfGJyYGR3uHBvrmFmZ7F2eWpjc2t6fWNzv2Dw46mk9Oz84vLq+ub27u2QDAQe+evI7fyfBAAeQAjACsYABjAAuZBAdQhkKh0JhsLh8IRiPhgBnoUKAA+hAGvQoVRSMigBBAQBwgIAEEFCgD1AABfpNCgDZAcIAGLJzFxEMAC0As5npQBD0IAmmEAVfBY0IAdI50MFDIiwpFJWFgBpAcKAJCApZFAAEwCUAODCAavgMYAr6HCvJFADToYABQA5ACXIhjeZylQkADsRQBPwAAgkpa20JQBjQN6PRiNelnYHHUrAD/A4RJdUAJCAeqqADhAIYB6+ETuX96QFCSTUMALMDQwAn4IAqYBjoXIoWwRfLFcrVer1cAEsA1huNpvNluttvtjudrsekAAXyAA=";
-const MAPBatCave = 
-    "N4IgKgngDgpiBcICCAbA7gQwgZxAGnAEsUZdEA7SqywLBA76G6rGWHbWO3brzO//GPAcI68hIvoEvgaTNlyZE1pIAeqlWoAhWjeuWTFLXUe07Veg4zlnJJlYAXwO/ov1dZvbeUOnzmq+se1HzorNXlpIOCAYOijABN4hPjvZ0loyLlExMAL4AjUmMzE2Vy0yQKEyUpkiwyy2IryKoNS2sLK3JbWhoju+h4+/oHBoeGRkYBricmp6emAB/mZxaXlldWZhcn52amtnY2J3c39tZPTs/Xjk9Hrm9u78R7Hp+eX17f3j8+vp8AwEG//oL3IFUfAgADyACMAFYwADGABcyCAOh1AAKA6NigAPoQBX0LFADgwgDXoFHE2ro1HxABBADSSbS6fSGQVAHQgjPpgBnoLGAFvhYhzWQVACCAgDhAQAIILFAHqAAC+xbFAGyA8TlYrofJJgAWgFXK2qAIehAE0wgCr4ImxADpGvphoAMYljSaOsbADSA8UASEDWgqAAJhMnjANXwBNxsV1zppJPJJoAS4kCbrNc6ygAdhKAJ+AKbUvVGyoAxoHTKfiBI9BQpebjKcAP8DxUUdQAkIJmOoAOEBRgHr4OtlHMFA2ZeskwAswLTACfggCpgSvxcixbD9kejsfjieTgqACWAp3P5wvF0vlyvV2v1xvKyAAL5AA="
-
 
 
 // Description d'un objet qu'on voudrait utiliser plus tard dans le code (ici ça vient du jeu pet spa, on ne s'en sert pas)
@@ -249,70 +254,51 @@ export class Home {
         character.Appearance.RemoveItem("ItemDevices");
     }
 
-    private cuffOtherCharacter = async (character: API_Character) => {
-        // Mettre les cuffs aux bras et jambes si c'est necessaire, sans enlever d'autres devices
-        let CuffedArms = false;
-        let CuffedFeet = false;
-        let CanCuffArms = false;
-        let CanCuffFeet = false;
+    /**
+     * Attempts to cuff the target character's arms and feet.
+     * - If the character is already bound with items without the "CuffedArms" or "CuffedFeet",
+     *   it will not apply additional cuffs unless `replaceBonds` is `true`.
+     * 
+     * @param character The target character to be cuffed.
+     * @param replaceBonds (Optional) If `true`, existing restraints may be replaced with new ones. Defaults to `false`.
+     * @returns {Promise<boolean>} Resolves to `true` if both arms and feet are successfully cuffed, otherwise `false`.
+     */
+    private cuffOtherCharacter = async (character: API_Character, replaceBonds: boolean = false): Promise<boolean> => {
 
-        // vérifier si menoté ou pas de liens
-        // Bras
+        let ArmsHaveCuffedEffect = false;
+        let FeetHaveCuffedEffect = false;
+
+        // Arms : Check if bound, and if has effect "CuffedArms"
         let itemOnArms = character.Appearance.InventoryGet("ItemArms");
-        if(Boolean(itemOnArms)) {
-            const cuffedArmsEffectName: EffectName[] = getAssetDef({
-                Name: itemOnArms.Name,
-                Group: "ItemArms"
-            }).Effect;
-
-            console.log(`*** Nom : ${itemOnArms.Name} ; cuffedArmsEffectName : ${cuffedArmsEffectName}`);
-            if(cuffedArmsEffectName.includes("CuffedArms"))
-            {
-                CuffedArms = true;
-            } 
-        } else {
-            CanCuffArms = true;
+        const ArmsAreFree = !Boolean(itemOnArms); // no ItemArms applied
+        if(!ArmsAreFree) {
+            ArmsHaveCuffedEffect =  getAssetDef({ Name: itemOnArms.Name, Group: "ItemArms"}).Effect.includes("CuffedArms");
         }
-        // Pieds
+        
+        // Feet : Check if bound, and if has effect "CuffedArms"
         let itemOnFeet = character.Appearance.InventoryGet("ItemFeet");
-        if(Boolean(itemOnFeet)) {
-            const cuffedArmsEffectName: EffectName[] = getAssetDef({
-                Name: itemOnFeet.Name,
-                Group: "ItemFeet"
-            }).Effect;
+        const FeetAreFree = !Boolean(itemOnFeet); // no ItemFeet applied
+        if(!FeetAreFree) {
+            FeetHaveCuffedEffect = getAssetDef({Name: itemOnFeet.Name, Group: "ItemFeet"}).Effect.includes("CuffedFeet");
+        } 
 
-            console.log(`*** Nom : ${itemOnFeet.Name} ; cuffedFeetEffectName : ${cuffedArmsEffectName}`);
-            if(cuffedArmsEffectName.includes("CuffedFeet"))
-            {
-                CuffedFeet = true;
-            } 
-        } else {
-            CanCuffFeet = true;
-        }
-
-        console.log(`Statut avant menotage : \n - CanCuffArms ${CanCuffArms}\n - CuffedArms ${CuffedArms}\n - CanCuffFeet ${CanCuffFeet}\n - CuffedFeet ${CuffedFeet}`);
-        // on ne va rien remplacer en mettant ces menottes
-        if ( CanCuffArms && (CuffedFeet || CanCuffFeet) ) {
-            let newCuffs = character.Appearance.AddItem(AssetGet("ItemArms", "LeatherCuffs"));
-            await wait(100);
-            CuffedArms = Boolean(newCuffs);
-            if(CuffedArms) {
+        // Unless replaceBonds is true, dont apply bound if we can't have the cuffed effect on feet
+        if ( replaceBonds || (ArmsAreFree && (FeetHaveCuffedEffect || FeetAreFree)) ) {
+            const newCuffs = character.Appearance.AddItem(AssetGet("ItemArms", "LeatherCuffs"));
+            ArmsHaveCuffedEffect = Boolean(newCuffs); // on a appliqué un objet qui a l'effet recherché, pas besoin de vérifier
+            if(ArmsHaveCuffedEffect) {
                 newCuffs.SetColor([ '#2E2E2E', 'Default' ]);
             }
         }
-        if ( CuffedArms && CanCuffFeet ) {
-            let newCuffs = character.Appearance.AddItem(AssetGet("ItemFeet", "LeatherAnkleCuffs"));
-            await wait(100);
-
-            CuffedFeet = Boolean(newCuffs);
-            if(CuffedFeet) {
-                newCuffs.SetColor([ 'Default', '#2E2E2E', 'Default' ]);
+        if ( replaceBonds || (ArmsHaveCuffedEffect && FeetAreFree) ) {
+            const newAnkleCuffs = character.Appearance.AddItem(AssetGet("ItemFeet", "LeatherAnkleCuffs"));
+            FeetHaveCuffedEffect = Boolean(newAnkleCuffs);
+            if(FeetHaveCuffedEffect) {
+                newAnkleCuffs.SetColor([ 'Default', '#2E2E2E', 'Default' ]);
             }
         }
        
-        let status = CuffedArms && CuffedFeet
-        console.log(`Statut ${status} apres menotage : \n - CanCuffArms ${CanCuffArms}\n - CuffedArms ${CuffedArms}\n - CanCuffFeet ${CanCuffFeet}\n - CuffedFeet ${CuffedFeet}`);
-        return status;
+        return ArmsHaveCuffedEffect && FeetHaveCuffedEffect;
     }
     
     private onMessage = async (msg: MessageEvent) => {
@@ -485,7 +471,7 @@ export class Home {
             "(The door shuting down on you makes you feel trapped. You can hear the distinctive sound of a lock sealing the door.)",
         );
         bondageDevice.lock("TimerPasswordPadlock", this.conn.Player.MemberNumber, {
-            Password: "Sophie",
+            Password: "SOPHIE",
             Hint: "Your host.",
             RemoveItem: true,
             RemoveTimer: Date.now() + 5 * 60 * 1000,
@@ -534,7 +520,7 @@ export class Home {
         console.warn(`Home - Trolley type : "${bondageDevice.Extended.Type}"`);
         // mise en place du cadenas avec un TimerPasswordPadlock de 5 minutes (l'unité de temps est en milisecondes)
         bondageDevice.lock("TimerPasswordPadlock", this.conn.Player.MemberNumber, {
-            Password: "Sophie",
+            Password: "SOPHIE",
             Hint: "Your host.",
             RemoveItem: true,
             RemoveTimer: Date.now() + 5 * 60 * 1000,
@@ -543,7 +529,7 @@ export class Home {
         });
         if(Boolean(bondageArms)) {
             bondageArms.lock("TimerPasswordPadlock", this.conn.Player.MemberNumber, {
-                Password: "Sophie",
+                Password: "SOPHIE",
                 Hint: "Your host.",
                 RemoveItem: true,
                 RemoveTimer: Date.now() + 5 * 60 * 1000,
@@ -576,7 +562,7 @@ export class Home {
             // mise en place du cadenas avec un TimerPasswordPadlock de 5 minutes (l'unité de temps est en milisecondes)await wait(1000);
             bondageDevice.SetDifficulty(20);
             bondageDevice.lock("TimerPasswordPadlock", this.conn.Player.MemberNumber, {
-                Password: "Sophie",
+                Password: "SOPHIE",
                 Hint: "Your host.",
                 RemoveItem: true,
                 RemoveTimer: Date.now() + 5 * 60 * 1000,
@@ -616,7 +602,7 @@ export class Home {
 
         await wait(500);
         bondageDevice.lock("TimerPasswordPadlock", this.conn.Player.MemberNumber, {
-            Password: "Sophie",
+            Password: "SOPHIE",
             Hint: "Your host.",
             RemoveItem: true,
             RemoveTimer: Date.now() + 5 * 60 * 1000,
@@ -647,7 +633,7 @@ export class Home {
 
         await wait(1000);
         bondageDevice.lock("TimerPasswordPadlock", this.conn.Player.MemberNumber, {
-            Password: "Sophie",
+            Password: "SOPHIE",
             Hint: "Your host.",
             RemoveItem: true,
             RemoveTimer: Date.now() + 5 * 60 * 1000,
@@ -675,7 +661,7 @@ export class Home {
 
         await wait(1500);
         bondageDevice.lock("TimerPasswordPadlock", this.conn.Player.MemberNumber, {
-            Password: "Sophie",
+            Password: "SOPHIE",
             Hint: "Your host.",
             RemoveItem: true,
             RemoveTimer: Date.now() + 5 * 60 * 1000,

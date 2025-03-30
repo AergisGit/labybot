@@ -328,7 +328,12 @@ export class API_Connector extends EventEmitter {
     };
 
     private onServerInfo = (info: any) => {
-        console.log("Server info: ", info);
+        if (info.Time) {
+            const formattedTime = new Date(info.Time).toISOString().replace("T", " ").split(".")[0];
+            console.log("Server info:", { ...info, Time: formattedTime });
+        } else {
+            console.log("Server info:", info);
+        }
     };
 
     private onLoginResponse = (resp: API_Character_Data) => {

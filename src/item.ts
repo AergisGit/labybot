@@ -160,12 +160,14 @@ export class API_AppearanceItem {
             let typedValue = this.data?.Property?.TypeRecord?.typed;
 
             // Get the current option
-            const currentOption = this.Extended.getExtendedOption(typedValue);
-            console.log("Lock - Extended Def: ", currentOption);
+            if(this.Extended) {
+                const currentOption = this.Extended.getExtendedOption(typedValue);
+                console.log("Lock - Extended Def: ", currentOption);
 
-            // If there is a currentOption and it allows a lock
-            if (currentOption?.AllowLock) {
-                canLock = true;
+                // If there is a currentOption and it allows a lock
+                if (currentOption?.AllowLock) {
+                    canLock = true;
+                }
             }
         }
         // Exit if neither the object nor its option allows a lock

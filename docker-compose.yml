@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  labybot:
+    image: labybot:0.0.3
+    container_name: labybot
+    volumes:
+      - ./config2.json:/bot/config.json
+      - labybot_data:/bot/save
+    stdin_open: true
+    tty: true
+
+volumes:
+  labybot_data:

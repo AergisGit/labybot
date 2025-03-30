@@ -22,3 +22,18 @@ export function remainingTimeString(until: number): string {
     if (minutes > 0) return `${minutes} minutes`;
     return `${seconds} seconds`;
 }
+
+export function formatDuration(durationMs: number): string {
+    const seconds = Math.floor((durationMs / 1000) % 60);
+    const minutes = Math.floor((durationMs / (1000 * 60)) % 60);
+    const hours = Math.floor((durationMs / (1000 * 60 * 60)) % 24);
+    const days = Math.floor(durationMs / (1000 * 60 * 60 * 24));
+
+    const parts = [];
+    if (days > 0) parts.push(`${days} day(s)`);
+    if (hours > 0) parts.push(`${hours} hour(s)`);
+    if (minutes > 0) parts.push(`${minutes} minute(s)`);
+    if (seconds > 0) parts.push(`${seconds} second(s)`);
+
+    return parts.join(", ");
+}

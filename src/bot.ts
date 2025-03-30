@@ -21,6 +21,7 @@ import { ConfigFile } from "./config";
 import { Db, MongoClient } from "mongodb";
 import { PetSpa } from "./games/petspa";
 import { Home } from "./games/home";
+import { Laby } from "./games/laby";
 import { MaidsPartyNightSinglePlayerAdventure } from "./hub/logic/maidsPartyNightSinglePlayerAdventure";
 import { Casino } from "./games/casino";
 
@@ -132,6 +133,11 @@ export async function startBot(): Promise<RopeyBot> {
             const homeGame = new Home(connector, config.superusers);
             await homeGame.init();
             connector.setBotDescription(Home.description);
+            break;
+        case "laby":
+            console.log("Starting game: Labyrinthe");
+            const labyGame = new Laby(connector, config.superusers);
+            await labyGame.init();
             break;
         case "casino":
             console.log("Starting game: Casino");

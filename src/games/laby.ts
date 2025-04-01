@@ -19,12 +19,11 @@ import { API_Connector, CoordObject, MessageEvent } from "../apiConnector";
 import { makeDoorRegion, MapRegion, positionEquals } from "../apiMap";
 import { API_Character } from "../apiCharacter";
 import { AssetGet, BC_AppearanceItem, API_AppearanceItem, getAssetDef } from "../item";
-import { wait } from "../hub/utils";
 import { CommandParser } from "../commandParser";
 import { BC_Server_ChatRoomMessage } from "../logicEvent";
 import { TriggerDef, Trigger, TriggerManager } from "./laby/triggerManager";
 import { triggersData as triggersData_LabyYumi1, BOT_POSITION as BOT_POSITION_labyYumi1, MAP as MAP_labyYumi1, BOT_DESCRIPTION } from './laby/data/labyYumi1';
-import { formatDuration } from "../util/time";
+import { formatDuration, wait} from "../util/time";
 import * as fs from 'fs'; // for the winners and challengers list
 
 // Carte
@@ -50,6 +49,11 @@ function replacePlaceholdersWithVariables(message: string, variables: { [key: st
 function isBCAppearanceItem(obj: any): obj is BC_AppearanceItem {
     return obj && typeof obj.Group === "string" && typeof obj.Name === "string";
 }
+
+const bondageItemGroups = ['ItemAddon', 'ItemArms', 'ItemBoots', 'ItemBreast', 'ItemButt', 'ItemDevices', 'ItemEars', 
+    'ItemFeet', 'ItemHands', 'ItemHead', 'ItemHood', 'ItemLegs', 'ItemMisc', 'ItemMouth', 'ItemMouth2', 
+    'ItemMouth3', 'ItemNeck', 'ItemNeckAccessories', 'ItemNeckRestraints', 'ItemNipples', 'ItemNipplesPiercings', 
+    'ItemNose', 'ItemPelvis', 'ItemTorso', 'ItemTorso2', 'ItemVulva', 'ItemVulvaPiercings', 'ItemHandheld'];
 
 
 export class Laby {
@@ -129,6 +133,18 @@ export class Laby {
         await this.setupCharacter();
     };
 
+    private setupRoom = async () => {
+        try {
+            this.conn.chatRoom.map.setMapFromString(MAP);
+        } catch (e) {
+            console.log("Map data not loaded", e);
+        }
+    };
+
+    private setupCharacter = async () => {
+        this.conn.moveOnMap(BOT_POSITION.X, BOT_POSITION.Y);
+        this.conn.Player.SetActivePose(["Kneel"]);
+    };
 
     // Lorsqu'un autre personnage entre dans la "Room"
     private onCharacterEntered(character: API_Character) {
@@ -247,36 +263,51 @@ export class Laby {
                         //console.log(`Link: ${triggerData.link}`);
                         const linkData = JSON.parse(decompressFromBase64(triggerData.link));
                         
+                        let doLock = false;
+                        let minutesLocked = 5;
+                        if(triggerData.effect) {
+                            console.log("triggerData.effect :", triggerData.effect);
+                            const regex = /^(\d+)m$/;
+                            const match = triggerData.effect.match(regex);
+                            if (match) {
+                                doLock=true;
+                                minutesLocked = parseInt(match[1], 10);
+                                console.log("Minutes:", minutesLocked);
+                            }
+                        }
+
                         if (Array.isArray(linkData)) {
-                            for (const bondageItemData of linkData) {
+                            // Initialisation
+                            let itemsToLock: API_AppearanceItem[] = []; // Initialisation du tableau
+
+                            // Tri des items avant la boucle
+                            const sortedLinkData = this.sortByPriority(linkData);
+
+                            // Boucle sur les éléments triés
+                            for (const bondageItemData of sortedLinkData) {
                                 if (isBCAppearanceItem(bondageItemData)) {
                                     console.log(`Using item: ${bondageItemData.Name} in group ${bondageItemData.Group}`);
 
-                                    await wait(250);
                                     const bondageItem = character.Appearance.AddItem(bondageItemData);
+                                    await wait(250);
 
-                                    if(triggerData.effect) {
-                                        console.log("triggerData.effect :", triggerData.effect);
-                                        const regex = /^(\d+)m$/;
-                                        const match = triggerData.effect.match(regex);
-                                        if (match) {
-                                            const minutesLocked = parseInt(match[1], 10);
-                                            console.log("Minutes:", minutesLocked);
-                                            
-                                            bondageItem.lock("TimerPasswordPadlock", this.conn.Player.MemberNumber, {
-                                                Password: "LABY",
-                                                Hint: "Four letters, where are you?",
-                                                RemoveItem: true,
-                                                RemoveTimer: Date.now() + minutesLocked * 60 * 1000,
-                                                ShowTimer: true,
-                                                LockSet: true,
-                                            });
-                                        }
+                                    if(doLock && bondageItemGroups.includes(bondageItemData.Group)) {
+                                        itemsToLock.push(bondageItem);
                                     }
-
                                 } else {
                                     console.error("Invalid item format!");
                                 }
+                            }
+                            for(const itemToLock of itemsToLock) {
+                                await wait(250);
+                                itemToLock.lock("TimerPasswordPadlock", this.conn.Player.MemberNumber, {
+                                    Password: "YUMILABY",
+                                    Hint: "Eight letters, where are you?",
+                                    RemoveItem: true,
+                                    RemoveTimer: Date.now() + minutesLocked * 60 * 1000,
+                                    ShowTimer: true,
+                                    LockSet: true,
+                                });
                             }
                         }
                     }
@@ -290,23 +321,17 @@ export class Laby {
         };
     }
     
-    private setupRoom = async () => {
-        try {
-            this.conn.chatRoom.map.setMapFromString(MAP);
-        } catch (e) {
-            console.log("Map data not loaded", e);
-        }
-    };
-
-    private setupCharacter = async () => {
-        this.conn.moveOnMap(BOT_POSITION.X, BOT_POSITION.Y);
-        this.conn.Player.SetActivePose(["Kneel"]);
-    };
 
     private freeCharacter(character: API_Character): void {
-        character.Appearance.RemoveItem("ItemArms");
-        character.Appearance.RemoveItem("ItemHands");
-        character.Appearance.RemoveItem("ItemDevices");
+        //character.Appearance.RemoveItem("ItemArms");
+        //character.Appearance.RemoveItem("ItemHands");
+        //character.Appearance.RemoveItem("ItemDevices");
+
+        for( const ItemGroup of bondageItemGroups ) {
+            console.log("Free - Remove itemGroup ", ItemGroup);
+            character.Appearance.RemoveItem(ItemGroup);
+        }
+
     }
    
     
@@ -324,29 +349,30 @@ export class Laby {
         this.freeCharacter(character);
 
         const characterDescription = character.Name + " (" + character.MemberNumber + ")";
-        const entryTime = this.listChallenger.get(character.MemberNumber);
+        let entryTime = this.listChallenger.get(character.MemberNumber);
 
         let exitTime = Date.now()
         // Not in the list ? Something happened ! Put arbitrary time (24h) and tell them we're sorry about that
         if (entryTime === undefined) {
-            exitTime = exitTime + 72000000;
+            entryTime = exitTime - 72000000;
         }
         const duration = exitTime - entryTime;
 
         // Ajouter la victoire au tableau
         let lastDurationTime = this.listVictory.get(characterDescription);
+        console.log(`Victory - characterDescription : "${characterDescription}"; lastDurationTime = ${lastDurationTime}; listVictory = ${JSON.stringify(Object.fromEntries(this.listVictory), null, 2)}`);
 
         console.log(`Victory - duration : ${duration}, formatDuration(duration) : ${formatDuration(duration)} `);
                 
-        if (!lastDurationTime === undefined) {
-            if (lastDurationTime >= duration ) {
+        if (lastDurationTime !== undefined) {
+            if (lastDurationTime <= duration ) {
                 // whisper good but you aready did better 
-                character.Tell("Whisper", `(Felicitations, voici votre temps : ${formatDuration(duration)} ! Vous n'avez pas batu votre record qui était de ${lastDurationTime})`);
+                character.Tell("Whisper", `(Felicitations, voici votre temps : ${formatDuration(duration)} ! Vous n'avez pas batu votre record qui était de ${formatDuration(lastDurationTime)})`);
             }
             else {
                 // best score, gg
                 this.listVictory.set(characterDescription, duration);
-                character.Tell("Whisper", `(Felicitations, voici votre temps : ${formatDuration(duration)} ! Vous avez battu votre précédent record qui était de ${lastDurationTime})`);
+                character.Tell("Whisper", `(Felicitations, voici votre temps : ${formatDuration(duration)} ! Vous avez battu votre précédent record qui était de ${formatDuration(lastDurationTime)})`);
             }
         } else {
             // gg for you victory
@@ -361,6 +387,86 @@ export class Laby {
 
         return duration;
     }
+
+    /**
+     * Trie les items en fonction de l'ordre de priorité défini
+     * @param items - Liste des items à trier
+     * @returns Liste triée des items
+     */
+    private sortByPriority(items: API_AppearanceItem[]): API_AppearanceItem[] {
+        const priorityOrder = ['ItemDevices','ItemAddon','ItemNeck','ItemNeckRestraints','ItemArms','ItemNose','ItemHands','ItemFeet','ItemLegs','ItemBoots', 
+             'ItemMouth','ItemMouth2','ItemMouth3','ItemHood','ItemHead','ItemNeckAccessories','ItemNipples','ItemNipplesPiercings','ItemBreast', 
+             'ItemTorso','ItemTorso2','ItemVulva','ItemVulvaPiercings','ItemButt','ItemPelvis','ItemHandheld','ItemMisc'];
+
+        return items.sort((a, b) => {
+            const isValidA = isBCAppearanceItem(a);
+            const isValidB = isBCAppearanceItem(b);
+    
+            if (!isValidA && !isValidB) return 0; // Si les deux sont invalides, garder l'ordre
+            if (!isValidA) return 1; // Placer les éléments invalides après
+            if (!isValidB) return -1; // Placer les éléments invalides après
+    
+            // Obtenir l'index du groupe dans priorityOrder
+            const priorityA = a.Group ? priorityOrder.indexOf(a.Group) : Infinity;
+            const priorityB = b.Group ? priorityOrder.indexOf(b.Group) : Infinity;
+    
+            // Si le groupe est trouvé dans priorityOrder, on trie par ordre de priorité
+            if (priorityA !== -1 && priorityB !== -1) {
+                return priorityA - priorityB; // Tri basé sur la priorité des groupes
+            }
+    
+            // Placer les groupes non prioritaires à la fin (Infinity)
+            if (priorityA !== -1) return -1; // Si a est dans priorityOrder, il passe avant
+            if (priorityB !== -1) return 1;  // Si b est dans priorityOrder, il passe avant
+    
+            // Si aucun groupe n'est dans priorityOrder, on garde l'ordre d'origine
+            return 0;
+        });
+    }
+    
+    // sauvegarde et chargement des scores
+    //
+    private saveDataToFile(): void {
+        const filePath = SAVEFILE_PATH + SAVEFILE_NAME;
+        const dirPath = SAVEFILE_PATH;
+
+        // Ensure the directory exists
+        if (!fs.existsSync(dirPath)) {
+            fs.mkdirSync(dirPath, { recursive: true });  // Create directories if they don't exist
+            console.warn("Save path did not exist, directories created.");
+        }
+
+        const data = {
+            listChallenger: Object.fromEntries(this.listChallenger),
+            listVictory: Object.fromEntries(this.listVictory),
+        };
+    
+        fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
+        console.log("Data successfully saved.");
+    }
+
+    private loadDataFromFile(): void {
+        const filePath = SAVEFILE_PATH + SAVEFILE_NAME;
+    
+        if (!fs.existsSync(filePath)) {
+            console.warn("Save file not found.");
+            return;
+        }
+    
+        try {
+            const rawData = fs.readFileSync(filePath, 'utf8');
+            const parsedData = JSON.parse(rawData);
+    
+            // Convert stored object back into Maps
+            this.listChallenger = new Map(Object.entries(parsedData.listChallenger).map(([key, value]) => [Number(key), Number(value)]));
+            this.listVictory = new Map(Object.entries(parsedData.listVictory).map(([key, value]) => [key, Number(value)]));
+    
+            console.log("Save file successfully loaded");
+        } catch (error) {
+            console.error("Save file error while trying to load data:", error);
+        }
+    }
+
 
     // Réponses aux messages "/bot commande"
 
@@ -470,95 +576,50 @@ export class Laby {
         msg: BC_Server_ChatRoomMessage,
         args: string[],
     ) => {
-        if(this.superusers.includes(sender.MemberNumber)){ 
-            /*
-            // Bloc pour vérifier que le personnage est bien présent, inutile ici vu qu'il vient de faire la commande
-            const char = this.conn._chatRoom.getCharacter(sender.MemberNumber);
-            if (!char) {
-                console.warn(`Trying to sync member number ${sender.MemberNumber} but can't find them!`);
-                return;
-            }*/
+        if(this.superusers.includes(sender.MemberNumber) && args.length > 0){
+            switch(args[0]) {
+                case "items": // Debug pour voir les items portés
+                    const character = this.conn._chatRoom.getCharacter(sender.MemberNumber);
+                    const bondageDevice = character.Appearance.InventoryGet("ItemDevices");
+                    if(Boolean(bondageDevice)) {console.log(`*** Debug ***\n  Device properties = ${JSON.stringify(bondageDevice.getData().Property, null, 2)}`);}
+                    const bondageArms = character.Appearance.InventoryGet("ItemArms");
+                    if(Boolean(bondageArms)) {console.log(`*** Debug ***\n  Arms properties = ${JSON.stringify(bondageArms.getData().Property, null, 2)}`);}
+                    const bondageHands = character.Appearance.InventoryGet("ItemHands");
+                    if(Boolean(bondageHands)) {console.log(`*** Debug ***\n  Hands properties = ${JSON.stringify(bondageHands.getData().Property, null, 2)}`);}
+                    break;
 
-            // Debug pour voir les items portés
-            //
-            const character = this.conn._chatRoom.getCharacter(sender.MemberNumber);
-            const bondageDevice = character.Appearance.InventoryGet("ItemDevices");
-            if(Boolean(bondageDevice))
-                console.log(`*** Debug ***\n  Device properties = ${JSON.stringify(bondageDevice.getData().Property, null, 2)}`);
-            const bondageArms = character.Appearance.InventoryGet("ItemArms");
-            if(Boolean(bondageArms))
-                console.log(`*** Debug ***\n  Arms properties = ${JSON.stringify(bondageArms.getData().Property, null, 2)}`);
-            const bondageHands = character.Appearance.InventoryGet("ItemHands");
-            if(Boolean(bondageHands))
-                console.log(`*** Debug ***\n  Hands properties = ${JSON.stringify(bondageHands.getData().Property, null, 2)}`);
+                case "link": // Debug pour reconstruire une chaine compressée en base64 avec seulement les items de bondage
+                    const linkString="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";
+                    // Liste des groupes à garder
+                    const allowedGroups = ['ItemAddon', 'ItemArms', 'ItemBoots', 'ItemBreast', 'ItemButt', 'ItemDevices', 'ItemEars', 'ItemFeet', 'ItemHands', 'ItemHead', 'ItemHood', 'ItemLegs', 'ItemMisc', 'ItemMouth', 'ItemMouth2','ItemMouth3', 'ItemNeck', 'ItemNeckAccessories', 'ItemNeckRestraints', 'ItemNipples', 'ItemNipplesPiercings', 'ItemNose', 'ItemPelvis', 'ItemTorso', 'ItemTorso2', 'ItemVulva', 'ItemVulvaPiercings', 'ItemHandheld'];
+                    // Décompression des données et filtrage pour ne garder que les objets dont le Group est dans allowedGroups
+                    const linkData = JSON.parse(decompressFromBase64(linkString));
+                    const filteredData = linkData.filter(item => allowedGroups.includes(item.Group));
+                    // Recompression en Base64 et vérif des données
+                    const newLinkString = compressToBase64(JSON.stringify(filteredData));
+                    const newlinkData = JSON.parse(decompressFromBase64(newLinkString));
+                    console.log(`*** Debug ***\n  Link data: ${linkData}\n  New Link String : ${newLinkString}\n  New Link data: ${newlinkData}`);
+                    break;
 
+                case "time" : 
+                    if(args.length > 1) {
+                        // on ajoute du temps au timer pour test, donc on enleve au temps de début
+                        try{
+                            let time = this.listChallenger.get(sender.MemberNumber) - Number(args[1]);
+                            this.listChallenger.set(sender.MemberNumber,time);
+                            const duration = Date.now() - time;
+                            console.log(`Time - duration : ${duration}, formatDuration(duration) : ${formatDuration(duration)} `);
+                            this.conn.reply(msg, `It been ${formatDuration(duration)} since you entered the Labyrinth.)`);
+                        } catch (e) {
+                            console.log("Probably NAN: ", e);
+                        }
+                    }
+                    break;
 
-            // Debug pour reconstruire une chaine compressée en base64 avec seulement les items de bondage
-            //
-            // chaine à nettoyée (trop longue pour transfert via le chat ?)
-            const linkString="NobwRAcghgtgpmAXGAMlALnAHgIQPYB2AJlAOZwCyAluugM5gA0YA4gE54CuADkmAJKYYACSjEGzAMJ4ANnjZJgYAMQAmdRqYrJO3VrUb1+3XubKTO/QDEbVgGx3jugMzP9ho2YuT3Hpyf9TFVt7Ry8XNwBdZgAFDm44NnQATyRwABVkhIAlOABjeSI0sHQkAEZmAHckVWYFRAAGZhkkBoBfZgARKgAzHqo8zhkU1uYcOTyAa0UBIVFiAAs4GSLosABRPvzSxCVxvCmtCkTyIisqAnI2BjXhKiIEXdY5ADc4CVm4ETEiJZWteZEOgoOA9UrMQF0bJUUgLcFgQEAQTyeXedHkyRBYIBP2RqLo6LYyWhsNKt3ucEEX0Ua0RMjklWR6CoLxoqV2tNobCoACNOJgaW0OuBoPA+OkFjCFvg8PQtOwuLxkABlBZ4d5aaRyepKZQAVkkzisRv0ZRwZUkqgA7FpOqCoEMybF4okRogMlk4LkCmwiu6wC1Gswea0OmBun0Bo72U0wPtDhzmJsetsaRCKWmERSqTAZsqDpM6PmpnQACxaYuFyt0PVaREESYyODoLHoaE8nmEMp1htNttS/sdrtgWn0vCMvLM1lu4Cc9DcvkCjlCxgi2CPBENACcpYa8o4PD4wjgA81snkgtXkHXfAAGmg2OR94q+PgiMkAKrcBIKKTn+pgAA6pKArOngP5uh6OT5IUxQpAkfrtCua5isgz6HsgiJsDAwKgvCWoXsgdo9A6wxgMK16oWA6FKmAWE4SScJntqfDEaRpQUaKG40UePy4dif4sUR9qOuRV5cXwPHIJCjH4f+rEiWRnE3sg95QI+CDMAqGFxng74oOOiTMYR4aKRx4kqQiUBUGwVgcAQ6BlGUIZaQetGiDZdmEHJQkqHYUDOHYqgABxiShG7rMkcA8hwlR0KoUkbFFMXjh8BE6qZJGiV0ZkjmBEHslBXowb6xQMIgFRgEqsb1KWYYRv0gzDDGYwTNMiYbFsk6ZncDw9dmQiZnSDJMiybJDVyvL8o8s7IZREVRXQZTlq5L7IJFGqCYRShsdlKiIjgkhWFuNpmHq50XbauU5VlZFmKopYPQ9I7KVRyowFA9LjJwbBsHARSrTpG2qlARDjsZGXKOs6yIlYsMvRZVEbUtK2sG5fDIwlW0Zbtd37Ydx2nSoF2XTd7FXbd8JqI9NMI+FfBWEMLSA7RFBcOgCwQzMyh2DgpbOPzFPk2scTga6hVgJk0E+n64CBrUJTlPVvSNdGoxxm1mbJqmHW9TN5IPDmQ1jhOU7jR1iKTYu+tzRJyAQFQ35NnQbgs3wDtO5tYDpQplNhfNfAxJwBLJK7aNrWAQch1zwl+69G6qnAx6/uHOmiwQXAEGl8mx+T8d8O9n0yOs6kfNp7lwKDMeZXniMbt9dCc27yAN033s5zXon58gVgyJw9xl+jPd9wP1e4+Z9PrTAsoDIQiXrNPzIFAQY+5d3Vk2TgUBTM4tbNxvbBb4c2O+7Xk9gKqFyYnAsrqQDqe0cq/c+dtflWKoeof/onSlsFVp/3TAOyA0CYCwNWbs+9qwx11FaLcqhLQ+EiOvEB2B1gyE7JUFgrwvblz4FgvAbxs5CV1HzZwhpEHr0AlAOg3AqBwAgQ/Pgkg5AcwMpUIyJ8nhqDsGaM0gC7YbCbKQMQ6BjzqXQBAfIjZt6aUYfbKRMgZHQM7njceL1IhAA=";
-            
-            // Liste des groupes à garder
-            const allowedGroups = ['ItemAddon', 'ItemArms', 'ItemBoots', 'ItemBreast', 'ItemButt', 'ItemDevices', 'ItemEars', 
-                'ItemFeet', 'ItemHands', 'ItemHead', 'ItemHood', 'ItemLegs', 'ItemMisc', 'ItemMouth', 'ItemMouth2', 
-                'ItemMouth3', 'ItemNeck', 'ItemNeckAccessories', 'ItemNeckRestraints', 'ItemNipples', 'ItemNipplesPiercings', 
-                'ItemNose', 'ItemPelvis', 'ItemTorso', 'ItemTorso2', 'ItemVulva', 'ItemVulvaPiercings', 'ItemHandheld'];
-
-            // Décompression des données
-            const linkData = JSON.parse(decompressFromBase64(linkString));
-            
-            // Filtrage pour ne garder que les objets dont le Group est dans allowedGroups
-            const filteredData = linkData.filter(item => allowedGroups.includes(item.Group));
-
-            // Recompression en Base64
-            const newLinkString = compressToBase64(JSON.stringify(filteredData));
-            const newlinkData = JSON.parse(decompressFromBase64(newLinkString));
-
-            // log changes
-            console.log(`*** Debug ***\n  Link data: ${linkData}\n  New Link String : ${newLinkString}\n  New Link data: ${newlinkData}`);
+                default:
+                    break;
+            }
         }
     };
 
-    // sauvegarde et chargement des scores
-
-    private saveDataToFile(): void {
-        const filePath = SAVEFILE_PATH + SAVEFILE_NAME;
-        const dirPath = SAVEFILE_PATH;
-
-        // Ensure the directory exists
-        if (!fs.existsSync(dirPath)) {
-            fs.mkdirSync(dirPath, { recursive: true });  // Create directories if they don't exist
-            console.warn("Save path did not exist, directories created.");
-        }
-
-        const data = {
-            listChallenger: Object.fromEntries(this.listChallenger),
-            listVictory: Object.fromEntries(this.listVictory),
-        };
-    
-        fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
-        console.log("Data successfully saved.");
-    }
-
-    private loadDataFromFile(): void {
-        const filePath = SAVEFILE_PATH + SAVEFILE_NAME;
-    
-        if (!fs.existsSync(filePath)) {
-            console.warn("Save file not found.");
-            return;
-        }
-    
-        try {
-            const rawData = fs.readFileSync(filePath, 'utf8');
-            const parsedData = JSON.parse(rawData);
-    
-            // Convert stored object back into Maps
-            this.listChallenger = new Map(Object.entries(parsedData.listChallenger).map(([key, value]) => [Number(key), Number(value)]));
-            this.listVictory = new Map(Object.entries(parsedData.listVictory).map(([key, value]) => [key, Number(value)]));
-    
-            console.log("Save file successfully loaded");
-        } catch (error) {
-            console.error("Save file error while trying to load data:", error);
-        }
-    }
 }

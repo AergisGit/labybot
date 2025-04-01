@@ -17,10 +17,9 @@ import { API_Connector, CoordObject, MessageEvent } from "../apiConnector";
 import { makeDoorRegion, MapRegion } from "../apiMap";
 import { API_Character } from "../apiCharacter";
 import { AssetGet, BC_AppearanceItem } from "../item";
-import { wait } from "../hub/utils";
 import { CommandParser } from "../commandParser";
 import { BC_Server_ChatRoomMessage } from "../logicEvent";
-import { remainingTimeString } from "../util/time";
+import { remainingTimeString, wait } from "../util/time";
 
 const RECEPTION_AREA: MapRegion = {
     TopLeft: { X: 13, Y: 11 },

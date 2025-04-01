@@ -19,10 +19,9 @@ import { API_Connector, CoordObject, MessageEvent } from "../apiConnector";
 import { makeDoorRegion, MapRegion, positionEquals } from "../apiMap";
 import { API_Character } from "../apiCharacter";
 import { AssetGet, BC_AppearanceItem, API_AppearanceItem, getAssetDef } from "../item";
-import { wait } from "../hub/utils";
 import { CommandParser } from "../commandParser";
 import { BC_Server_ChatRoomMessage } from "../logicEvent";
-//import { remainingTimeString } from "../util/time";
+import { wait } from "../util/time";
 
 
 // Parametrage pour la cartes

@@ -30,10 +30,12 @@ export function formatDuration(durationMs: number): string {
     const days = Math.floor(durationMs / (1000 * 60 * 60 * 24));
 
     const parts = [];
-    if (days > 0) parts.push(`${days} day(s)`);
-    if (hours > 0) parts.push(`${hours} hour(s)`);
-    if (minutes > 0) parts.push(`${minutes} minute(s)`);
-    if (seconds > 0) parts.push(`${seconds} second(s)`);
+    if (days > 0) parts.push(`${days} day${days > 1 ? 's' : ''}`);
+    if (hours > 0) parts.push(`${hours} hour${hours > 1 ? 's' : ''}`);
+    if (minutes > 0) parts.push(`${minutes} minute${minutes > 1 ? 's' : ''}`);
+    if (seconds > 0) parts.push(`${seconds} second${seconds > 1 ? 's' : ''}`);
 
     return parts.join(", ");
 }
+
+export const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));

@@ -14,6 +14,7 @@
 
 // Les imports ci-dessous servent à ce que le code sur cette page puissent utiliser du contenu d'autres fichiers du projet
 //
+import { logger } from "../api";
 //import { decompressFromBase64 } from "lz-string";
 import { API_Connector, CoordObject, MessageEvent } from "../apiConnector";
 import { makeDoorRegion, MapRegion, positionEquals } from "../apiMap";
@@ -146,9 +147,6 @@ export class Home {
         // triggers sur évenements provenant de API_Connector
         this.conn.on("RoomCreate", this.onChatRoomCreated);
         this.conn.on("RoomJoin", this.onChatRoomJoined);
-        this.conn.on("CharacterEntered", this.onCharacterEntered);
-        this.conn.on("CharacterLeft", this.onCharacterLeft);
-
 
         // Déclancheurs via arrivée d'un personnage sur des coordonnées
 
@@ -212,19 +210,6 @@ export class Home {
         await this.setupCharacter();
     };
 
-    // Lorsqu'un autre personnage entre dans la "Room"
-    private onCharacterEntered(character: API_Character) {
-        console.log(`Le bot a détecté ${character.Name} qui entre !`);
-    }
-
-    private onCharacterLeft(character: API_Character) {
-        // L'instance de l'objet character n'est plus dispo car supprimé de la liste du bot après sa sortie
-        // par contre si on a une liste de personnage pour une raison ou une autre,
-        //   on pourrait si on le souhaite update une liste par rapport aux personnage encore dans la salle
-        
-        //console.log(`Le bot a détecté ${character.Name} qui sort !`);
-        //this.enteredTheHouse.delete(character.MemberNumber);
-    }
 
     // Méthode privée de configuration de la Room, dont la carte.
     // Ici on ne met à jour que la MAP, mais on pourrait ouvrir, fermer, choisir le nombre de places, changer la whitelist, etc.
@@ -238,7 +223,7 @@ export class Home {
             }
 
         } catch (e) {
-            console.log("Map data not loaded", e);
+            logger.warn("Map data not loaded", e);
         }
     };
 
@@ -309,20 +294,20 @@ export class Home {
 
         } else if (msg.message.Type === "Emote") { // si c'est une emote !
             
-            console.warn(`Est-ce qu'on emote ?`);
+            logger.debug(`Est-ce qu'on emote ?`);
             // si le personnage dans son emote a "push" ou "appuie" sur la case CHANDELIER_SECRET
             // this.secretRoomOpen => tadaam
 
             // recup coords de  et regarde si CHANDELIER_SECRET === msg.sender.MemberNumber  coords
             const char = this.conn._chatRoom.getCharacter(msg.sender.MemberNumber);
             if (!char) {
-                console.warn(`Trying to sync member number ${msg.sender.MemberNumber} but can't find them!`);
+                logger.debug(`Trying to sync member number ${msg.sender.MemberNumber} but can't find them!`);
                 return;
             }
             const charMapPos = char.MapPos;
-            console.warn(`Est-ce qu'on emote au bon endroit ? : X = ${charMapPos.X} - Y = ${charMapPos.Y}`);
+            logger.debug(`Est-ce qu'on emote au bon endroit ? : X = ${charMapPos.X} - Y = ${charMapPos.Y}`);
             if ( positionEquals(charMapPos,CHANDELIER_SECRET)) {
-                console.warn(`Au bon endroit : X = ${charMapPos.X} - Y = ${charMapPos.Y}`);
+                logger.debug(`Au bon endroit : X = ${charMapPos.X} - Y = ${charMapPos.Y}`);
                 // on regarde si un des CHANDELIER_MOT_SECRET a été prononcé devant le chandelier en emote 
                 const words = msg.message.Content.toLowerCase().split(/^[a-z*]+/);
 
@@ -347,7 +332,7 @@ export class Home {
                     }
                 }
             } else {
-                console.warn(`Pas au bon endroit`);
+                logger.debug(`Pas au bon endroit`);
             }
         }
     };
@@ -516,7 +501,7 @@ export class Home {
         
         await wait(2000);
         //debug
-        console.warn(`Home - Trolley type : "${bondageDevice.Extended.Type}"`);
+        logger.debug(`Home - Trolley type : "${bondageDevice.Extended.Type}"`);
         // mise en place du cadenas avec un TimerPasswordPadlock de 5 minutes (l'unité de temps est en milisecondes)
         bondageDevice.lock("TimerPasswordPadlock", this.conn.Player.MemberNumber, {
             Password: "SOPHIE",
@@ -545,7 +530,7 @@ export class Home {
     private onCharacterEnterCross  = async (character: API_Character) => {
         // Mettre les cuffs aux bras et jambes si c'est necessaire, sans enlever d'autres devices
         let isCuffed = await this.cuffOtherCharacter(character);
-        //console.log(`Statut isCuffed = ${isCuffed}`);
+        //logger.debug(`Statut isCuffed = ${isCuffed}`);
         
         // X-Cross Prerequisite: ["CuffedArms", "CuffedFeet"],
         if( isCuffed ) {
@@ -572,7 +557,7 @@ export class Home {
             character.Tell("Whisper",
                 "(You can hear the distinctive sound of locks closing, sealing you on your cross. )");
         } else {
-            //console.warn(`Home - Cross : pas mit`);
+            //logger.debug(`Home - Cross : pas mit`);
             
             character.Tell("Whisper",
                 "(You look at the St Andrew Cross, and it looks back into your soul. Menacingly.)");
@@ -644,13 +629,12 @@ export class Home {
             "(Wait, was it the sound of a lock?)");
             
         bondageDevice.setProperty("Text", `Keep inside`); // voir dans le code de BC pour les objets comme ça avec du texte ?
-        //console.log(`TB - After properties text = ${JSON.stringify(bondageDevice.getData().Property, null, 2)}`);
+        //logger.debug(`TB - After properties text = ${JSON.stringify(bondageDevice.getData().Property, null, 2)}`);
         
     }
 
     private onCharacterEnterLocker = async (character: API_Character) => {
-
-            
+        
         //await wait(500);
         const bondageDevice = character.Appearance.AddItem(AssetGet("ItemDevices", "Locker"));
 
@@ -816,17 +800,17 @@ export class Home {
             // Bloc pour vérifier que le personnage est bien présent, inutile ici vu qu'il vient de faire la commande
             const char = this.conn._chatRoom.getCharacter(sender.MemberNumber);
             if (!char) {
-                console.warn(`Trying to sync member number ${sender.MemberNumber} but can't find them!`);
+                logger.debug(`Trying to sync member number ${sender.MemberNumber} but can't find them!`);
                 return;
             }*/
 
             const character = this.conn._chatRoom.getCharacter(sender.MemberNumber);
             const bondageDevice = character.Appearance.InventoryGet("ItemDevices");
             if(Boolean(bondageDevice))
-                console.log(`Device properties = ${JSON.stringify(bondageDevice.getData().Property, null, 2)}`);
+                logger.debug(`Device properties = ${JSON.stringify(bondageDevice.getData().Property, null, 2)}`);
             const bondageArms = character.Appearance.InventoryGet("ItemArms");
             if(Boolean(bondageArms))
-                console.log(`Arms properties = ${JSON.stringify(bondageArms.getData().Property, null, 2)}`);
+                logger.debug(`Arms properties = ${JSON.stringify(bondageArms.getData().Property, null, 2)}`);
 
         }
     };

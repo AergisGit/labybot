@@ -12,6 +12,7 @@
  * limitations under the License.
  */
 
+import { logger } from './api';
 import { API_Character } from "./apiCharacter";
 import { AssetType } from "./appearance";
 import { AssetFemale3DCG, PoseFemale3DCG } from "./bcdata/female3DCG";
@@ -47,7 +48,7 @@ function getPoseCategories(
     for (const pose of poses) {
         const poseObj = PoseFemale3DCG.find((x) => x.Name === pose);
         if (!poseObj) {
-            console.warn("Couldn't find pose", pose);
+            logger.warn("Couldn't find pose", pose);
         } else {
             cats.add(poseObj.Category);
         }
@@ -156,13 +157,13 @@ export class API_AppearanceItem {
  
         // Checks if the object option allows a lock
         if (!canLock) {
-            //console.log("Lock - Data Property type record:", this.data?.Property?.TypeRecord);
+            //logger.log("Lock - Data Property type record:", this.data?.Property?.TypeRecord);
             let typedValue = this.data?.Property?.TypeRecord?.typed;
 
             // Get the current option
             if(this.Extended) {
                 const currentOption = this.Extended.getExtendedOption(typedValue);
-                console.log("Lock - Extended Def: ", currentOption);
+                logger.log("Lock - Extended Def: ", currentOption);
 
                 // If there is a currentOption and it allows a lock
                 if (currentOption?.AllowLock) {
@@ -252,7 +253,7 @@ export class ExtendedItem {
                 ),
             );
         }
-        //console.log(`Made extended item for ${item.Group} / ${item.Name}, Extended def is ${this.extendedDef}`);
+        //logger.log(`Made extended item for ${item.Group} / ${item.Name}, Extended def is ${this.extendedDef}`);
             }
 
     public get Type() {
@@ -262,12 +263,12 @@ export class ExtendedItem {
     public getExtendedOption(typed: number) {
         // Check if extendedDef has TypedItemConfig or not
         if (this.extendedDef?.Archetype !== "typed" || !Array.isArray(this.extendedDef.Options)) {
-            //console.warn("CurOpt - invalid or missing Options in extendedDef");
+            //logger.warn("CurOpt - invalid or missing Options in extendedDef");
             return null;
         }
     
         const options = this.extendedDef.Options;
-        //console.log("CurOpt - Extended Def:", JSON.stringify(options, null, 2));
+        //logger.log("CurOpt - Extended Def:", JSON.stringify(options, null, 2));
 
         // retorn option if found
         return options?.[typed];
@@ -284,7 +285,7 @@ export class ExtendedItem {
     }
 
     public SetType(t: string): void {
-        //console.log(`Setting type for asset ${this.item.Group} / ${this.item.Name} with extended def ${JSON.stringify(this.extendedDef)} to ${t}`);
+        //logger.log(`Setting type for asset ${this.item.Group} / ${this.item.Name} with extended def ${JSON.stringify(this.extendedDef)} to ${t}`);
         if (this.extendedDef.Archetype !== "typed") {
             throw new Error(
                 `Tried to set type of non-typed asset ${this.item.Name}`,
@@ -375,7 +376,7 @@ export function getAssetDef(
     const grp = AssetFemale3DCG.find((g) => g.Group === desc.Group);
     if (!grp) {
         // We could add support for the echo slots, but until then, don't spam about them
-        if (!desc.Group.includes("Luzi")) console.warn("Invalid item group: " + desc.Group);
+        if (!desc.Group.includes("Luzi")) logger.warn("Invalid item group: " + desc.Group);
         return undefined;
     }
 
@@ -395,7 +396,7 @@ export function getExtendedAssetDef(
 ): AssetArchetypeConfig {
     const grp = AssetFemale3DCGExtended[desc.Group];
     if (!grp) {
-        console.warn("Invalid item group: " + desc.Group);
+        logger.warn("Invalid item group: " + desc.Group);
         return undefined;
     }
 

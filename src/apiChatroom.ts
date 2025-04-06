@@ -12,6 +12,7 @@
  * limitations under the License.
  */
 
+import { logger } from './api';
 import { EventEmitter } from "stream";
 import { API_Character, API_Character_Data } from "./apiCharacter";
 import { API_Connector, CoordObject, SingleItemUpdate } from "./apiConnector";
@@ -104,7 +105,7 @@ export class API_Chatroom extends EventEmitter {
     ) {
         const char = this.getCharacter(memberNumber);
         if (!char) {
-            console.warn(
+            logger.warn(
                 `Trying to sync member number ${charData.MemberNumber} but can't find them!`,
             );
             return;
@@ -177,7 +178,7 @@ export class API_Chatroom extends EventEmitter {
             (x) => x.MemberNumber === itemUpdate.Target,
         );
         if (charData === undefined) {
-            console.warn(
+            logger.warn(
                 `Trying to update item on member number ${itemUpdate.Target} but can't find them!`,
             );
             return;
@@ -231,7 +232,7 @@ export class API_Chatroom extends EventEmitter {
             (x) => x.MemberNumber === memberNumber,
         );
         if (charData === undefined) {
-            console.warn(
+            logger.warn(
                 `Trying to position item on member number ${memberNumber} but can't find them!`,
             );
             return;
@@ -253,7 +254,7 @@ export class API_Chatroom extends EventEmitter {
         try {
             this.map.onCharacterMove(char, prevPos);
         } catch (e) {
-            console.log("Error handling character move", e);
+            logger.log("Error handling character move", e);
         }
     }
 

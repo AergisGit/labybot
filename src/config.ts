@@ -14,6 +14,7 @@
 
 import { RoomDefinition } from "./apiConnector";
 import { CasinoConfig } from "./games/casino";
+import { Laby } from "./games/laby";
 
 export interface ConfigFile {
     user: string;
@@ -21,6 +22,7 @@ export interface ConfigFile {
     env: "live" | "test";
     url?: string;
     game: string;
+    gameName?: string;
     superusers: number[];
     room: RoomDefinition;
     mongo_uri?: string;

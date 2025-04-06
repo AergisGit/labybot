@@ -17,7 +17,7 @@ import { API_Connector } from "./apiConnector";
 import { API_AppearanceItem } from "./item";
 
 export interface BC_Server_ChatRoomMessage {
-    Type: "Hidden" | "Chat" | "Emote" | "Action" | "Activity" | "Whisper";
+    Type: "Action" | "Chat" | "Whisper" | "Emote" | "Activity" | "Hidden" | "LocalMessage" | "ServerMessage" | "Status";
     Sender: number;
     Dictionary: Record<string, string>;
     Content: string;

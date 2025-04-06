@@ -12,6 +12,7 @@
  * limitations under the License.
  */
 
+import { logger } from './api';
 import { API_Character } from "./apiCharacter";
 import { API_Connector, MessageEvent } from "./apiConnector";
 import { BC_Server_ChatRoomMessage, TBeepType } from "./logicEvent";
@@ -74,11 +75,11 @@ export class CommandParser {
                     const promiseRet = ret as Promise<void>;
                     if (promiseRet.catch) {
                         promiseRet.catch((e) => {
-                            console.log("Command handler threw async exception", e);
+                            logger.log("Command handler threw async exception", e);
                         });
                     }
                 } catch (e) {
-                    console.log("Command handler threw exception", e);
+                    logger.log("Command handler threw exception", e);
                 }
                 return;
             }

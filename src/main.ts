@@ -12,18 +12,19 @@
  * limitations under the License.
  */
 
+import { logger } from './api';
 import { startBot } from "./bot";
 
 async function main() {
     const { game } = await startBot();
 
     if (!game) {
-        console.error("No game specified!");
+        logger.error("No game specified!");
         process.exit(1);
     }
 }
 
 main().catch((e) => {
-    console.error(e);
+    logger.error(e);
     process.exit(1);
 });

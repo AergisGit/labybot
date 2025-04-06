@@ -12,6 +12,7 @@
  * limitations under the License.
  */
 
+import { logger } from './api';
 import { API_Chatroom } from "./apiChatroom";
 import { API_Connector, CoordObject, TellType } from "./apiConnector";
 import { AppearanceType } from "./appearance";
@@ -145,7 +146,7 @@ export class API_Character {
     }
 
     public Tell(msgType: TellType, msg: string): void {
-        console.log(`Tell (${msgType}) ${this}: ${msg}`);
+        logger.log(`Tell (${msgType}) ${this}: ${msg}`);
         this.connection.SendMessage(msgType, msg, this.data.MemberNumber);
     }
 
@@ -252,7 +253,7 @@ export class API_Character {
     public SetHeightOverride(override: number | null): void {
         const emoticon = this.Appearance.InventoryGet("Emoticon");
         if (!emoticon) {
-            console.warn("No emoticon found for height override");
+            logger.warn("No emoticon found for height override");
             return;
         }
 

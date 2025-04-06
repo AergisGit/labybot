@@ -14,6 +14,8 @@
 
 // Les imports ci-dessous servent à ce que le code sur cette page puissent utiliser du contenu d'autres fichiers du projet
 //
+import { Logger } from '../api';
+import { perf } from '../util/perf';
 import { decompressFromBase64, compressToBase64 } from "lz-string";
 import { API_Connector, CoordObject, MessageEvent } from "../apiConnector";
 import { makeDoorRegion, MapRegion, positionEquals } from "../apiMap";
@@ -21,9 +23,10 @@ import { API_Character } from "../apiCharacter";
 import { AssetGet, BC_AppearanceItem, API_AppearanceItem, getAssetDef } from "../item";
 import { CommandParser } from "../commandParser";
 import { BC_Server_ChatRoomMessage } from "../logicEvent";
-import { TriggerDef, Trigger, TriggerManager } from "./laby/triggerManager";
 import { triggersData as triggersData_LabyYumi1, BOT_POSITION as BOT_POSITION_labyYumi1, MAP as MAP_labyYumi1, BOT_DESCRIPTION } from './laby/data/labyYumi1';
 import { formatDuration, wait} from "../util/time";
+import { TriggerDef, Trigger, TriggerManager } from "./utils/triggerManager";
+import { ResourceData, ResourceLoader } from "./utils/gameResources";
 import * as fs from 'fs'; // for the winners and challengers list
 
 // Carte
@@ -40,7 +43,6 @@ const SAVEFILE_NAME = "save_labyYumi1.json";
 
 function replacePlaceholdersWithVariables(message: string, variables: { [key: string]: string }): string {
     return message.replace(/\[([^\]]+)\]/g, (match, p1) => {
-        console.log(`Match: ${match}, Key: ${p1}, Replacement: ${variables[p1] || match}`); // Pour voir les valeurs dans la console
         // Remplacer par la valeur correspondante ou garder le texte original si aucune correspondance
         return variables[p1] || match;
     });
@@ -59,16 +61,19 @@ const bondageItemGroups = ['ItemAddon', 'ItemArms', 'ItemBoots', 'ItemBreast', '
 export class Laby {
     // gestion automatisée des triggers depuis une definition
     private triggerManager: TriggerManager;
-
+    private log: Logger;
     // variable contenant la description du bot pour sa bio
     public botDescription = [
-        "Welcome to this Labyrinth !",
-        "The current layout is designed by Yumi (189644).",
+        "Welcome to the Enchanted Labyrinth!",
+        "\nYou are about to enter a place protected by powerful magical forces.",
+        "\nHere are a few things to know:",
+        "This maze is made up of several areas, and a mysterious path will give you some clues, but be careful not to fall into its traps. You could find yourself completely tied up for between 5 and 15 minutes. You'll also have choices to make; we advise you to make the right one, otherwise, a nasty consequence awaits you.",
         "\n\nCommands:\n",
         "/bot fame - Gives you the time spent by our best challengers!",
         "/bot who - Who is challenging this labyrinth?",
         "/bot time - How long you've been in the Labyrinth",
-        "\nThis bot runs on a customized version of Ropeybot.",
+        "\nThe current layout is designed by Yumi (189644).",
+        "This bot runs on a customized version of Ropeybot.",
         "Code at https://github.com/FriendsOfBC/ropeybot",
     ].join("\n");
 
@@ -78,8 +83,9 @@ export class Laby {
 
     private commandParser: CommandParser;
 
-    public constructor(private conn: API_Connector, private superusers: number[] ) {
+    public constructor(private conn: API_Connector, private superusers: number[], private gameName: string) {
         
+        this.log = new Logger('LABY', 'debug', true, 'green');
         this.commandParser = new CommandParser(this.conn);
 
         // Déclancheurs via commandes texte, reçues apres "/bot "
@@ -95,14 +101,24 @@ export class Laby {
         
         this.conn.setBotDescription(this.botDescription);
 
+        
+        // Chargement des ressources pour le labyrinthe
+        const resourceLoader = new ResourceLoader('laby');
+
+        // Charger une ressource spécifique
+        const resourceData:ResourceData = resourceLoader.loadResource(gameName);
+        if (resourceData) { // le temps du debug
+            this.log.debug('ResourceData - map: ', resourceData.map);
+            this.log.debug('ResourceData - bot_position: ', resourceData.bot_position);
+            this.log.debug('ResourceData - triggersData: ', resourceData.triggersData);
+        }
+
         // Déclancheur sur reception d'un message peut importe son contenu
         //conn.on("Message", this.onMessage);
         
         // triggers sur évenements provenant de API_Connector
         this.conn.on("RoomCreate", this.onChatRoomCreated);
         this.conn.on("RoomJoin", this.onChatRoomJoined);
-        this.conn.on("CharacterEntered", this.onCharacterEntered);
-        this.conn.on("CharacterLeft", this.onCharacterLeft);
 
         // Déclancheurs via arrivée d'un personnage sur des coordonnées ou régions
         this.triggerManager = new TriggerManager(this.conn);
@@ -137,7 +153,7 @@ export class Laby {
         try {
             this.conn.chatRoom.map.setMapFromString(MAP);
         } catch (e) {
-            console.log("Map data not loaded", e);
+            this.log.error("Map data not loaded", e);
         }
     };
 
@@ -146,28 +162,17 @@ export class Laby {
         this.conn.Player.SetActivePose(["Kneel"]);
     };
 
-    // Lorsqu'un autre personnage entre dans la "Room"
-    private onCharacterEntered(character: API_Character) {
-        console.log(`Le bot a détecté ${character.Name} qui entre !`);
-    }
-
-    private onCharacterLeft(character: API_Character) {
-        // L'instance de l'objet character n'est plus dispo car supprimé de la liste du bot après sa sortie
-        // par contre si on a une liste de personnage pour une raison ou une autre,
-        //   on pourrait si on le souhaite update une liste par rapport aux personnage encore dans la salle
-        
-        //console.log(`Le bot a détecté ${character.Name} qui sort !`);
-        //this.enteredTheHouse.delete(character.MemberNumber);
-    }
 
     // Callback function to be invoked when a trigger is activated
     private onWalkTriggerActivated = async (character: API_Character, triggerData: TriggerDef) => {
         
-        console.log(`Laby - ${triggerData.name} triggered! Actions: ${triggerData.actions}`);
+        const id = perf.start("onWalkTriggerActivated");
+        
+
+        this.log.debug(`Trigger: ${triggerData.name} - Actions: ${triggerData.actions}`);
         for (const action of triggerData.actions) {
             switch (action) {
                 case "Whisper":
-                    console.log("Effectuer l'action Whisper.");
                     if (triggerData.message) {
                         character.Tell("Whisper", `(${triggerData.message})`);
                     }
@@ -175,7 +180,6 @@ export class Laby {
         
                 case "Message":
                     if( !Boolean(triggerData.effect === "VICTORY") ) {
-                        console.log("Effectuer l'action Message." );
                         if (triggerData.message) {
                             const displayName = character.NickName && character.NickName.trim() !== "" ? character.NickName : character.Name;
                             let variables = { "Nom": `${displayName}` };
@@ -185,8 +189,7 @@ export class Laby {
                     }
                     break;
         
-                case "Effect": 
-                    console.log("Effectuer l'action Effect.");
+                case "Effect":
                     switch (triggerData.effect) {
                         case "ENTER":
                             // Enregistrer le nouveau joueur qui entre
@@ -196,7 +199,6 @@ export class Laby {
                         case "VICTORY":
                             // Prendre en compte la victoire
                             const duration = formatDuration(this.playerVictory(character));
-                            console.log("Effectuer l'action Message." );
                             if (triggerData.message) {
                                 const displayName = character.NickName && character.NickName.trim() !== "" ? character.NickName : character.Name;
                                 let variables = { "Name": `${displayName}`, "Duration": `${duration}`};
@@ -209,7 +211,6 @@ export class Laby {
 
                 case "Door":
                     // This code will change the object on effect coord, with the new name, or with blank
-                    console.log(`Effectuer l'action Porte ${triggerData.effect}.`);
 
                     if(triggerData.effect) {
                         // Séparer la chaîne en deux parties : l'action et les coordonnées
@@ -235,7 +236,6 @@ export class Laby {
 
                 case "Tile":
                     // This code will change the tile on effect coord, with the new name set
-                    console.log(`Effectuer l'action Tile ${triggerData.effect}.`);
 
                     if(triggerData.effect) {
                         // Séparer la chaîne en deux parties : l'action et les coordonnées
@@ -257,22 +257,19 @@ export class Laby {
         
                 case "Bond":
                     // Traitement spécifique pour "Bond"
-                    console.log("Effectuer l'action Bond.");
 
                     if (triggerData.link) {
-                        //console.log(`Link: ${triggerData.link}`);
+                        //this.log.debug(`Link: ${triggerData.link}`);
                         const linkData = JSON.parse(decompressFromBase64(triggerData.link));
                         
                         let doLock = false;
                         let minutesLocked = 5;
                         if(triggerData.effect) {
-                            console.log("triggerData.effect :", triggerData.effect);
                             const regex = /^(\d+)m$/;
                             const match = triggerData.effect.match(regex);
                             if (match) {
                                 doLock=true;
                                 minutesLocked = parseInt(match[1], 10);
-                                console.log("Minutes:", minutesLocked);
                             }
                         }
 
@@ -280,26 +277,30 @@ export class Laby {
                             // Initialisation
                             let itemsToLock: API_AppearanceItem[] = []; // Initialisation du tableau
 
+                            
                             // Tri des items avant la boucle
+                            const idPerfTri = perf.start("sortedLinkData");
                             const sortedLinkData = this.sortByPriority(linkData);
+                            perf.end("sortedLinkData", idPerfTri);
 
                             // Boucle sur les éléments triés
                             for (const bondageItemData of sortedLinkData) {
                                 if (isBCAppearanceItem(bondageItemData)) {
-                                    console.log(`Using item: ${bondageItemData.Name} in group ${bondageItemData.Group}`);
+                                    this.log.debug(`Using item: ${bondageItemData.Name} in group ${bondageItemData.Group}`);
 
                                     const bondageItem = character.Appearance.AddItem(bondageItemData);
-                                    await wait(250);
+                                    await wait(100);
 
                                     if(doLock && bondageItemGroups.includes(bondageItemData.Group)) {
                                         itemsToLock.push(bondageItem);
                                     }
                                 } else {
-                                    console.error("Invalid item format!");
+                                    this.log.error("Invalid item format!");
                                 }
                             }
+                            
+                            this.log.debug("Lock items.");
                             for(const itemToLock of itemsToLock) {
-                                await wait(250);
                                 itemToLock.lock("TimerPasswordPadlock", this.conn.Player.MemberNumber, {
                                     Password: "YUMILABY",
                                     Hint: "Eight letters, where are you?",
@@ -308,30 +309,29 @@ export class Laby {
                                     ShowTimer: true,
                                     LockSet: true,
                                 });
+                                await wait(100);
                             }
                         }
                     }
                     break;
         
                 default:
-                    console.log(`Action inconnue : ${action}`);
+                    this.log.debug(`Unknown action: ${action}`);
                     // Traitement par défaut si l'action n'est pas reconnue
                     break;
             }
         };
+
+        perf.end("onWalkTriggerActivated", id);
     }
     
 
-    private freeCharacter(character: API_Character): void {
-        //character.Appearance.RemoveItem("ItemArms");
-        //character.Appearance.RemoveItem("ItemHands");
-        //character.Appearance.RemoveItem("ItemDevices");
-
+    private async freeCharacter(character: API_Character): Promise<void> {
+        this.log.debug("!free - Remove bondage items");
         for( const ItemGroup of bondageItemGroups ) {
-            console.log("Free - Remove itemGroup ", ItemGroup);
             character.Appearance.RemoveItem(ItemGroup);
+            await wait(100);
         }
-
     }
    
     
@@ -360,24 +360,21 @@ export class Laby {
 
         // Ajouter la victoire au tableau
         let lastDurationTime = this.listVictory.get(characterDescription);
-        console.log(`Victory - characterDescription : "${characterDescription}"; lastDurationTime = ${lastDurationTime}; listVictory = ${JSON.stringify(Object.fromEntries(this.listVictory), null, 2)}`);
-
-        console.log(`Victory - duration : ${duration}, formatDuration(duration) : ${formatDuration(duration)} `);
                 
         if (lastDurationTime !== undefined) {
             if (lastDurationTime <= duration ) {
                 // whisper good but you aready did better 
-                character.Tell("Whisper", `(Felicitations, voici votre temps : ${formatDuration(duration)} ! Vous n'avez pas batu votre record qui était de ${formatDuration(lastDurationTime)})`);
+                character.Tell("Whisper", `(Congratulations, here's your time: ${formatDuration(duration)}! You didn't beat your record, which was ${formatDuration(lastDurationTime)}.)`);
             }
             else {
                 // best score, gg
                 this.listVictory.set(characterDescription, duration);
-                character.Tell("Whisper", `(Felicitations, voici votre temps : ${formatDuration(duration)} ! Vous avez battu votre précédent record qui était de ${formatDuration(lastDurationTime)})`);
+                character.Tell("Whisper", `(Congratulations, here's your time: ${formatDuration(duration)}! You beat your previous record, which was ${formatDuration(lastDurationTime)}.)`);
             }
         } else {
             // gg for you victory
             this.listVictory.set(characterDescription, duration);
-            character.Tell("Whisper", `(Felicitations pour avoir traversé ce labyrinthe ! Voici votre temps : ${formatDuration(duration)} !)`);
+            character.Tell("Whisper", `(Congratulations on getting through this maze! Here's your time: ${formatDuration(duration)}!)`);
         }
         
         //  Enlever au tableau des entrées
@@ -394,7 +391,8 @@ export class Laby {
      * @returns Liste triée des items
      */
     private sortByPriority(items: API_AppearanceItem[]): API_AppearanceItem[] {
-        const priorityOrder = ['ItemDevices','ItemAddon','ItemNeck','ItemNeckRestraints','ItemArms','ItemNose','ItemHands','ItemFeet','ItemLegs','ItemBoots', 
+        
+        const priorityOrder = ['ItemDevices','ItemNeck','ItemAddon','ItemNeckRestraints','ItemArms','ItemNose','ItemHands','ItemFeet','ItemLegs','ItemBoots', 
              'ItemMouth','ItemMouth2','ItemMouth3','ItemHood','ItemHead','ItemNeckAccessories','ItemNipples','ItemNipplesPiercings','ItemBreast', 
              'ItemTorso','ItemTorso2','ItemVulva','ItemVulvaPiercings','ItemButt','ItemPelvis','ItemHandheld','ItemMisc'];
 
@@ -433,7 +431,7 @@ export class Laby {
         // Ensure the directory exists
         if (!fs.existsSync(dirPath)) {
             fs.mkdirSync(dirPath, { recursive: true });  // Create directories if they don't exist
-            console.warn("Save path did not exist, directories created.");
+            this.log.warn("Save path did not exist, directories created.");
         }
 
         const data = {
@@ -442,14 +440,14 @@ export class Laby {
         };
     
         fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
-        console.log("Data successfully saved.");
+        this.log.debug("Data successfully saved.");
     }
 
     private loadDataFromFile(): void {
         const filePath = SAVEFILE_PATH + SAVEFILE_NAME;
     
         if (!fs.existsSync(filePath)) {
-            console.warn("Save file not found.");
+            this.log.error("Save file not found.");
             return;
         }
     
@@ -461,9 +459,9 @@ export class Laby {
             this.listChallenger = new Map(Object.entries(parsedData.listChallenger).map(([key, value]) => [Number(key), Number(value)]));
             this.listVictory = new Map(Object.entries(parsedData.listVictory).map(([key, value]) => [key, Number(value)]));
     
-            console.log("Save file successfully loaded");
+            this.log.debug("Save file successfully loaded");
         } catch (error) {
-            console.error("Save file error while trying to load data:", error);
+            this.log.error("Save file error while trying to load data:", error);
         }
     }
 
@@ -530,7 +528,6 @@ export class Laby {
             this.conn.reply(msg, `You're not listed as being in the Labyrinth yet.)`);
         } else {
             const duration = Date.now() - entryTime;
-            console.log(`Time - duration : ${duration}, formatDuration(duration) : ${formatDuration(duration)} `);
             this.conn.reply(msg, `It been ${formatDuration(duration)} since you entered the Labyrinth.)`);
         }
     };
@@ -543,7 +540,7 @@ export class Laby {
         msg: BC_Server_ChatRoomMessage,
         args: string[],
     ) => {
-        if(this.superusers.includes(sender.MemberNumber)){ 
+        if(this.superusers.includes(sender.MemberNumber) || this.conn.chatRoom.Admin.includes(sender.MemberNumber)){ 
             this.freeCharacter(sender);
         }
     };
@@ -581,11 +578,11 @@ export class Laby {
                 case "items": // Debug pour voir les items portés
                     const character = this.conn._chatRoom.getCharacter(sender.MemberNumber);
                     const bondageDevice = character.Appearance.InventoryGet("ItemDevices");
-                    if(Boolean(bondageDevice)) {console.log(`*** Debug ***\n  Device properties = ${JSON.stringify(bondageDevice.getData().Property, null, 2)}`);}
+                    if(Boolean(bondageDevice)) {this.log.debug(`!debug items - Device properties = ${JSON.stringify(bondageDevice.getData().Property, null, 2)}`);}
                     const bondageArms = character.Appearance.InventoryGet("ItemArms");
-                    if(Boolean(bondageArms)) {console.log(`*** Debug ***\n  Arms properties = ${JSON.stringify(bondageArms.getData().Property, null, 2)}`);}
+                    if(Boolean(bondageArms)) {this.log.debug(`!debug items - Arms properties = ${JSON.stringify(bondageArms.getData().Property, null, 2)}`);}
                     const bondageHands = character.Appearance.InventoryGet("ItemHands");
-                    if(Boolean(bondageHands)) {console.log(`*** Debug ***\n  Hands properties = ${JSON.stringify(bondageHands.getData().Property, null, 2)}`);}
+                    if(Boolean(bondageHands)) {this.log.debug(`!debug items - Hands properties = ${JSON.stringify(bondageHands.getData().Property, null, 2)}`);}
                     break;
 
                 case "link": // Debug pour reconstruire une chaine compressée en base64 avec seulement les items de bondage
@@ -598,7 +595,7 @@ export class Laby {
                     // Recompression en Base64 et vérif des données
                     const newLinkString = compressToBase64(JSON.stringify(filteredData));
                     const newlinkData = JSON.parse(decompressFromBase64(newLinkString));
-                    console.log(`*** Debug ***\n  Link data: ${linkData}\n  New Link String : ${newLinkString}\n  New Link data: ${newlinkData}`);
+                    this.log.debug(`!debug link - Link data: ${linkData}\n  New Link String : ${newLinkString}\n  New Link data: ${newlinkData}`);
                     break;
 
                 case "time" : 
@@ -608,10 +605,9 @@ export class Laby {
                             let time = this.listChallenger.get(sender.MemberNumber) - Number(args[1]);
                             this.listChallenger.set(sender.MemberNumber,time);
                             const duration = Date.now() - time;
-                            console.log(`Time - duration : ${duration}, formatDuration(duration) : ${formatDuration(duration)} `);
                             this.conn.reply(msg, `It been ${formatDuration(duration)} since you entered the Labyrinth.)`);
                         } catch (e) {
-                            console.log("Probably NAN: ", e);
+                            this.log.debug("!debug time - Time error, probably NAN: ", e);
                         }
                     }
                     break;

@@ -12,6 +12,7 @@
  * limitations under the License.
  */
 
+import { logger } from './api';
 import { KidnappersGameRoom } from "./hub/logic/kidnappersGameRoom";
 import { API_Connector } from "./apiConnector";
 import { RoleplaychallengeGameRoom } from "./hub/logic/roleplaychallengeGameRoom";
@@ -39,12 +40,12 @@ export interface RopeyBot {
 
 export async function startBot(): Promise<RopeyBot> {
     process.on("SIGINT", () => {
-        console.log("SIGINT received, exiting");
+        logger.log("SIGINT received, exiting");
         process.exit(0);
     });
 
     process.on("SIGTERM", () => {
-        console.log("SIGTERM received, exiting");
+        logger.log("SIGTERM received, exiting");
         process.exit(0);
     });
 
@@ -56,7 +57,7 @@ export async function startBot(): Promise<RopeyBot> {
     const serverUrl = config.url ?? SERVER_URL[config.env];
 
     if (!serverUrl) {
-        console.log("env must be live or test");
+        logger.log("env must be live or test");
         process.exit(1);
     }
 
@@ -66,12 +67,12 @@ export async function startBot(): Promise<RopeyBot> {
             ssl: true,
             tls: true,
         });
-        console.log("Connecting to mongo...");
+        logger.log("Connecting to mongo...");
         await mongoClient.connect();
-        console.log("...connected!");
+        logger.log("...connected!");
         db = mongoClient.db(config.mongo_db);
         await db.command({ ping: 1 });
-        console.log("...ping successful!");
+        logger.log("...ping successful!");
     }
 
     const connector = new API_Connector(
@@ -86,14 +87,14 @@ export async function startBot(): Promise<RopeyBot> {
         case undefined:
             break;
         case "kidnappers":
-            console.log("Starting game: Kidnappers");
+            logger.log("Starting game: Kidnappers");
             const kidnappersGame = new KidnappersGameRoom(connector, config);
             connector.accountUpdate({ Nickname: "Kidnappers Bot" });
             connector.setBotDescription(KidnappersGameRoom.description);
             connector.startBot(kidnappersGame);
             break;
         case "roleplay":
-            console.log("Starting game: Roleplay challenge");
+            logger.log("Starting game: Roleplay challenge");
             const roleplayGame = new RoleplaychallengeGameRoom(
                 connector,
                 config,
@@ -102,9 +103,9 @@ export async function startBot(): Promise<RopeyBot> {
             connector.startBot(roleplayGame);
             break;
         case "maidspartynight":
-            console.log("Starting game: Maid's Party Night");
+            logger.log("Starting game: Maid's Party Night");
             if (!config.user2 || !config.password2) {
-                console.log("Need user2 and password2 for Maid's Party Night");
+                logger.log("Need user2 and password2 for Maid's Party Night");
                 process.exit(1);
             }
             const connector2 = new API_Connector(
@@ -117,34 +118,34 @@ export async function startBot(): Promise<RopeyBot> {
             connector.startBot(maidsPartyNightGame);
             break;
         case "dare":
-            console.log("Starting game: dare");
+            logger.log("Starting game: dare");
             connector.accountUpdate({ Nickname: "Dare Bot" });
             new Dare(connector);
             connector.setBotDescription(Dare.description);
             break;
         case "petspa":
-            console.log("Starting game: Pet Spa");
+            logger.log("Starting game: Pet Spa");
             const petSpaGame = new PetSpa(connector);
             await petSpaGame.init();
             connector.setBotDescription(PetSpa.description);
             break;
         case "home":
-            console.log("Starting game: Home");
+            logger.log("Starting game: Home");
             const homeGame = new Home(connector, config.superusers);
             await homeGame.init();
             connector.setBotDescription(Home.description);
             break;
         case "laby":
-            console.log("Starting game: Labyrinthe");
-            const labyGame = new Laby(connector, config.superusers);
+            logger.log("Starting game: Labyrinthe");
+            const labyGame = new Laby(connector, config.superusers, config.gameName);
             await labyGame.init();
             break;
         case "casino":
-            console.log("Starting game: Casino");
+            logger.log("Starting game: Casino");
             new Casino(connector, db, config.casino);
             break;
         default:
-            console.log("No such game");
+            logger.log("No such game");
             process.exit(1);
     }
 

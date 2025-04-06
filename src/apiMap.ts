@@ -12,6 +12,7 @@
  * limitations under the License.
  */
 
+import { logger } from './api';
 import { decompressFromBase64 } from "lz-string";
 import { API_Character } from "./apiCharacter";
 import { API_Chatroom_Data } from "./apiChatroom";
@@ -30,6 +31,10 @@ function mapTileByName(name: string, type?: string): ChatRoomMapTile {
         (type === undefined || tile.Type === type) &&
         (tile.Style === name)
     );
+}
+
+function mapTileById(ID: number): ChatRoomMapTile {
+    return ChatRoomMapViewTileList.find((tile) => tile.ID === ID);
 }
 
 function mapObjectByName(name: string): ChatRoomMapObject {
@@ -211,13 +216,13 @@ export class API_Map extends EventEmitter {
     ): void {
         // maybe? if necessary?
         //this.emit("CharacterMapMove", this.getCharacter(memberNumber));
-        if (
+        /*if (
             character.MapPos.X === prevPos.X &&
             character.MapPos.Y === prevPos.Y
         ) {
-            console.log(`Discarding duplicate move event for ${character}`);
+            logger.log(`Discarding duplicate move event for ${character}`);
             return;
-        }
+        }*/
 
         const tileTriggers = this.tileTriggers.get(
             character.X + character.Y * 40,

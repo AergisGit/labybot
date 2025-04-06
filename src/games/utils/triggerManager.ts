@@ -1,5 +1,6 @@
 // triggerManager.ts
 
+import { logger } from "../../api";
 import { CoordObject } from '../../apiConnector';
 import { MapRegion } from "../../apiMap";
 import { API_Character } from "../../apiCharacter";
@@ -36,14 +37,14 @@ export class Trigger implements TriggerDef  {
 
   // Affiche les détails du trigger
   public display(): void {
-    console.log(`Trigger: ${this.name}`);
-    console.log(`Type: ${this.type}`);
-    console.log(`Coordonnées: (${this.x1}, ${this.y1})` + (this.x2 !== undefined ? ` - (${this.x2}, ${this.y2})` : ""));
-    if (this.actions) console.log(`Action: ${this.actions}`);
-    if (this.effect) console.log(`Effet: ${this.effect}`);
-    if (this.message) console.log(`Message: ${this.message}`);
-    if (this.link) console.log(`Lien: ${this.link}`);
-    console.log("-----------------------------");
+    logger.debug(`Trigger: ${this.name}`);
+    logger.debug(`Type: ${this.type}`);
+    logger.debug(`Coordonnées: (${this.x1}, ${this.y1})` + (this.x2 !== undefined ? ` - (${this.x2}, ${this.y2})` : ""));
+    if (this.actions) logger.debug(`Action: ${this.actions}`);
+    if (this.effect) logger.debug(`Effet: ${this.effect}`);
+    if (this.message) logger.debug(`Message: ${this.message}`);
+    if (this.link) logger.debug(`Lien: ${this.link}`);
+    logger.debug("-----------------------------");
   }
 }
 
@@ -56,18 +57,11 @@ export class TriggerManager {
     // Method to add a trigger of type Coord (single coordinates)
     public addCoordTrigger(triggerData: TriggerDef, callback: Function): void {
         const coord: CoordObject = { X: triggerData.x1, Y: triggerData.y1 };
-
         
         // The callback that will handle the trigger when it's activated
-        /*
-        const triggerCallback = (character: any) => {
-            console.log(`${triggerData.name} triggered! Action: ${triggerData.actions}`);
-            callback(character, triggerData); // Call the main class's callback function with the trigger data
-        };*/
-        
         const triggerCallback = ((data) => {
             return (character: any) => {
-                console.log(`${data.name} triggered! Action: ${data.actions}`);
+                logger.debug(`${data.name} triggered! Action: ${data.actions}`);
                 callback(character, data); // Utilise bien la copie locale "data"
             };
         })(triggerData);

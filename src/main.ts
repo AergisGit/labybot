@@ -13,15 +13,27 @@
  */
 
 import { logger } from './api';
-import { startBot } from "./bot";
+//import { startBot } from "./bot";
+import { BotManager } from './admin/botManager'
+import { AdminServer } from './admin/adminServer';
+
 
 async function main() {
-    const { game } = await startBot();
+    /*const { game } = await startBot();
 
     if (!game) {
         logger.error("No game specified!");
         process.exit(1);
-    }
+    }*/
+        // Start BotManager
+        const botManager = new BotManager();
+        await botManager.initialize();  // Charger la config et démarrer le bot
+        logger.info('BotManager started');
+    
+        // 3. Démarrage du serveur d'administration
+        const adminServer = new AdminServer(botManager);
+        adminServer.startAdminServer(); 
+        logger.info('AdminServer started');
 }
 
 main().catch((e) => {

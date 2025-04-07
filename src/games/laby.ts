@@ -14,19 +14,19 @@
 
 // Les imports ci-dessous servent à ce que le code sur cette page puissent utiliser du contenu d'autres fichiers du projet
 //
-import { Logger } from '../api';
-import { perf } from '../util/perf';
 import { decompressFromBase64, compressToBase64 } from "lz-string";
-import { API_Connector, CoordObject, MessageEvent } from "../apiConnector";
-import { makeDoorRegion, MapRegion, positionEquals } from "../apiMap";
+import { API_Connector, CoordObject } from "../apiConnector";
 import { API_Character } from "../apiCharacter";
-import { AssetGet, BC_AppearanceItem, API_AppearanceItem, getAssetDef } from "../item";
+import { BC_AppearanceItem, API_AppearanceItem } from "../item";
 import { CommandParser } from "../commandParser";
 import { BC_Server_ChatRoomMessage } from "../logicEvent";
-import { triggersData as triggersData_LabyYumi1, BOT_POSITION as BOT_POSITION_labyYumi1, MAP as MAP_labyYumi1, BOT_DESCRIPTION } from './laby/data/labyYumi1';
 import { formatDuration, wait} from "../util/time";
-import { TriggerDef, Trigger, TriggerManager } from "./utils/triggerManager";
+
+import { Logger } from '../api';
+import { perf } from '../util/perf';
+import { TriggerDef, TriggerManager } from "./utils/triggerManager";
 import { ResourceData, ResourceLoader } from "./utils/gameResources";
+import { triggersData as triggersData_LabyYumi1, BOT_POSITION as BOT_POSITION_labyYumi1, MAP as MAP_labyYumi1, BOT_DESCRIPTION } from './laby/data/labyYumi1';
 import * as fs from 'fs'; // for the winners and challengers list
 
 // Carte
@@ -61,7 +61,7 @@ const bondageItemGroups = ['ItemAddon', 'ItemArms', 'ItemBoots', 'ItemBreast', '
 export class Laby {
     // gestion automatisée des triggers depuis une definition
     private triggerManager: TriggerManager;
-    private log: Logger;
+    public log: Logger;
     // variable contenant la description du bot pour sa bio
     public botDescription = [
         "Welcome to the Enchanted Labyrinth!",
@@ -301,6 +301,7 @@ export class Laby {
                             
                             this.log.debug("Lock items.");
                             for(const itemToLock of itemsToLock) {
+                                this.log.debug("Lock item ", itemToLock.getData().Name ," itemToLock", itemToLock );
                                 itemToLock.lock("TimerPasswordPadlock", this.conn.Player.MemberNumber, {
                                     Password: "YUMILABY",
                                     Hint: "Eight letters, where are you?",

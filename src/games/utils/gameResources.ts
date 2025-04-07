@@ -38,8 +38,9 @@ export class ResourceLoader {
 
       // Validation des données attendues
       if (
+
         typeof data.map !== 'string' ||
-        typeof data.bot_position !== 'object' ||
+        typeof data.botPosition !== 'object' ||
         !Array.isArray(data.triggersData)
       ) {
         this.log.error(`Le fichier ${resourceName}.json ne contient pas les données attendues.`);

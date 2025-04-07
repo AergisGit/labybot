@@ -338,6 +338,11 @@ export class API_Connector extends EventEmitter {
     };
 
     private onLoginResponse = (resp: API_Character_Data) => {
+        /*if (typeof resp === "string") {
+            logger.error("Login failed:", resp);
+            this.emit("LoginError", resp);
+            return;
+        }*/
         logger.log("Got login response", resp);
         this._player = new API_Character(resp, this, undefined);
         this.loggedIn.resolve();
@@ -447,7 +452,7 @@ export class API_Connector extends EventEmitter {
     };
 
     private onChatRoomSyncCharacter = (resp: any) => {
-        //logger.log("sync character", resp);
+        logger.log("sync character", resp);
         this._chatRoom.characterSync(
             resp.Character.MemberNumber,
             resp.Character,

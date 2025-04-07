@@ -4,7 +4,7 @@ import { Logger } from '../api';
 export class PerfLogger {
   private enabled: boolean;
   private timers: Map<string, number>;
-  private log: Logger;
+  public log: Logger;
 
   constructor(enabled: boolean = false) {
     this.enabled = enabled;

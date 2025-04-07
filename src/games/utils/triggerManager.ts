@@ -3,7 +3,6 @@
 import { logger } from "../../api";
 import { CoordObject } from '../../apiConnector';
 import { MapRegion } from "../../apiMap";
-import { API_Character } from "../../apiCharacter";
 
 export type TriggerType = "Zone" | "ZoneOut" | "Coord";
 export type ActionType = "Whisper" | "Message" | "Effect" | "Door" | "Tile" | "Bond";

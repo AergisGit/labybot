@@ -18,7 +18,7 @@ import { API_Connector } from "./apiConnector";
 import { RoleplaychallengeGameRoom } from "./hub/logic/roleplaychallengeGameRoom";
 import { Dare } from "./games/dare";
 import { readFile } from "fs/promises";
-import { ConfigFile } from "./config";
+import { ConfigFile, getDefaultConfig } from "./config";
 import { Db, MongoClient } from "mongodb";
 import { PetSpa } from "./games/petspa";
 import { Home } from "./games/home";
@@ -38,7 +38,7 @@ export interface RopeyBot {
     game: string;
 }
 
-export async function startBot(): Promise<RopeyBot> {
+export async function startBot(configOverride?: ConfigFile): Promise<RopeyBot> {
     process.on("SIGINT", () => {
         logger.log("SIGINT received, exiting");
         process.exit(0);
@@ -49,11 +49,18 @@ export async function startBot(): Promise<RopeyBot> {
         process.exit(0);
     });
 
-    const cfgFile = process.argv[2] ?? "./config.json";
+    let config: ConfigFile;
 
-    const configString = await readFile(cfgFile, "utf-8");
-    const config = JSON.parse(configString) as ConfigFile;
-
+    if (configOverride) {
+        config = configOverride;
+    } else {
+        /*const cfgFile = process.argv[2] ?? "./config.json";
+        const configString = await readFile(cfgFile, "utf-8");
+        config = JSON.parse(configString) as ConfigFile;*/
+        
+        config = await getDefaultConfig();
+    }
+    
     const serverUrl = config.url ?? SERVER_URL[config.env];
 
     if (!serverUrl) {

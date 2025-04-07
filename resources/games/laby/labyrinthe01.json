@@ -1,6 +1,6 @@
 {
     "map": "N4IgKgngDgpiBcICCAbA7gQwgZxAGnAEsUZdFAsEEquptrvpoDtnnyAJjzr7j9n9vp3ItW9NgPEMJNcSMaDeQ8T2UKlvOTK2rKqvQN3CRgk0unLFErnUkGqtwzvvbTa/issWz+x1ur6HcytvIIC1VydbKNCbZ189a25gty8gw387WmjA9ODFRIKkr3cXXMDyuLsPdRVTDxMyqucnDN9HT2SQ1O6GmMaMn0zmuu7PfO9E2P6h6faJnqLx80tW6QGmxuySmuWizsrc1alBhMXi+eqwyLWmsPjJhfCuvr8ZjdvtQrG9s9711ZaaUqP3GXwuZnW10BFUhTxi5wiJQBN2yQKyYPcHQRmhhryyw3EABDCSwUilCvsiSTWNDhvjccTSaN5uTsSJ8CAAPIAIwAVjAAMYAFzIIAAJhLJVLpTLZXLpYAGIAAQYAIICVABj5VrtdKAGk6g2GiXYMUAdKNFqlgBPwS2262AJCBAJBA9sAEsB222AFvh3d6fb6/Ya3f6g8GQ6Gw+GJYGI9GY7G4/GE4mk8mU6m0+mM5ms9mc+nADgwgDXoD2AK+gk+aY4AxoArEoAS7GlUrGGKlbng1arSAAL5AA=",
-    "bot_position":"{ X: 1, Y: 1 }",
+    "botPosition": { "X": 1, "Y": 1 },
     "triggersData":[
         {"name":"LabEntry","type":"Zone","x1":0,"y1":0,"x2":7,"y2":7,"actions":["Whisper"],"message":"Welcome to this Labyrinth!"},
         {"name":"LabExit","type":"Zone","x1":33,"y1":33,"x2":39,"y2":39,"actions":["Whisper"],"message":"Congratulations, you've seen it to the end!"}

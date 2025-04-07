@@ -150,20 +150,20 @@ export class API_AppearanceItem {
         lockType: AssetLockType,
         lockedBy: number,
         opts: Record<string, any>,
+        replace: boolean = false // replace the current lock (if any) with this one
     ): void {
         // Check if the object allows a lock
         const assetDef = this.getAssetDef();
         let canLock = assetDef.AllowLock ?? false;
  
-        // Checks if the object option allows a lock
         if (!canLock) {
-            //logger.log("Lock - Data Property type record:", this.data?.Property?.TypeRecord);
-            let typedValue = this.data?.Property?.TypeRecord?.typed;
-
+            // Checks if the object option allows a lock
             // Get the current option
             if(this.Extended) {
+                //logger.log("Lock - Data Property type record:", this.data?.Property?.TypeRecord);
+                let typedValue = this.data?.Property?.TypeRecord?.typed;
                 const currentOption = this.Extended.getExtendedOption(typedValue);
-                logger.log("Lock - Extended Def: ", currentOption);
+                //logger.log("Lock - Extended Def: ", currentOption);
 
                 // If there is a currentOption and it allows a lock
                 if (currentOption?.AllowLock) {
@@ -171,6 +171,13 @@ export class API_AppearanceItem {
                 }
             }
         }
+        
+        // check if this object already has a lock
+        //
+        logger.log("Lock - this.data.Property.LockedBy:", this.data.Property.LockedBy);
+        
+
+
         // Exit if neither the object nor its option allows a lock
         if (!canLock) return;
 

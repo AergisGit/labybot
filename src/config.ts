@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+import { readFile } from "fs/promises";
 import { RoomDefinition } from "./apiConnector";
 import { CasinoConfig } from "./games/casino";
 import { Laby } from "./games/laby";
@@ -32,4 +32,12 @@ export interface ConfigFile {
     password2: string;
 
     casino?: CasinoConfig;
+}
+
+// Get config from file
+export async function getDefaultConfig(): Promise<ConfigFile> {
+    const cfgFile = process.argv[2] ?? "./config.json";
+    const configString = await readFile(cfgFile, "utf-8");
+
+    return  JSON.parse(configString) as ConfigFile;
 }

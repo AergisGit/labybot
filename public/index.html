@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Bot Panel</title>
+</head>
+<body>
+    <h1>Bot Admin</h1>
+
+    <p id="status">Chargement...</p>
+
+    <button onclick="startBot()">Démarrer</button>
+    <button onclick="stopBot()">Arrêter</button>
+    <button onclick="restartBot()">Redémarrer</button>
+
+    <h2>Configuration</h2>
+    <form onsubmit="updateConfig(event)">
+        <label>
+            Carte :
+            <input id="map" type="text" />
+        </label><br/>
+        <label>
+            Mode de jeu :
+            <input id="mode" type="text" />
+        </label><br/>
+        <button type="submit">Appliquer</button>
+    </form>
+
+    <script>
+        async function fetchStatus() {
+            try {
+                const res = await fetch('/bots');
+                if (!res.ok) throw new Error('Erreur lors de la récupération du statut');
+                const data = await res.json();
+                document.getElementById('status').innerText = 
+                    `Statut : ${data.running ? 'En ligne' : 'Hors ligne'} | Carte : ${data.config.map || 'N/A'} | Mode : ${data.config.gameMode || 'N/A'}`;
+
+                document.getElementById('map').value = data.config.map || '';
+                document.getElementById('mode').value = data.config.gameMode || '';
+            } catch (error) {
+                console.error(error);
+                document.getElementById('status').innerText = 'Erreur lors du chargement du statut.';
+            }
+        }
+
+        async function startBot() {
+            try {
+                const res = await fetch('/start-bot', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ botId: 0 }) 
+                });
+                if (!res.ok) throw new Error('Erreur lors du démarrage du bot');
+                fetchStatus();
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        async function stopBot() {
+            try {
+                const res = await fetch('/stop-bot', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ botId: 0 }) 
+                });
+                if (!res.ok) throw new Error('Erreur lors de l\'arrêt du bot');
+                fetchStatus();
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        async function restartBot() {
+            await stopBot();
+            await startBot();
+        }
+
+        async function updateConfig(event) {
+            event.preventDefault();
+            try {
+                const map = document.getElementById('map').value;
+                const mode = document.getElementById('mode').value;
+                const res = await fetch('/update-config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ map, gameMode: mode })
+                });
+                if (!res.ok) throw new Error('Erreur lors de la mise à jour de la configuration');
+                fetchStatus();
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        fetchStatus();
+        setInterval(fetchStatus, 5000);
+    </script>
+</body>
+</html>

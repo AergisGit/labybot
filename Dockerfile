@@ -17,10 +17,16 @@ COPY . .
 RUN npm run build
 
 # Déplacer seulement le répertoire de sortie (out) vers la racine du projet (/bot)
-RUN cp -r /tmp/source/out /bot/ && cp -r /tmp/source/resources /bot/ && rm -rf /tmp/source
-
+RUN cp -r /tmp/source/out /bot/ && \
+    cp -r /tmp/source/resources /bot/ && \
+    cp -r /tmp/source/public /bot/ && \
+    rm -rf /tmp/source
+    
 # Définir le répertoire de travail principal
 WORKDIR /bot
+
+# Expose le port du serveur
+EXPOSE 3000
 
 # Exécuter le bot
 CMD ["node", "--enable-source-maps", "/bot/bundle.js"]

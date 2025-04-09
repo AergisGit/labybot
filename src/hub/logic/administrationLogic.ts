@@ -365,7 +365,7 @@ export class AdministrationLogic extends LogicBase {
 			const result = processor(connection, argv, sender, respond);
 			if (result) {
 				result.catch(err => {
-					logger.fatal(
+					logger.error(
 						`${this.a_LogHeader(connection)} CRASH during async processing of SU command "${command}". Logic: ${this.constructor.name}\n` +
 						`Arguments: ${JSON.stringify(argv)}\nError: `,
 						err
@@ -373,7 +373,7 @@ export class AdministrationLogic extends LogicBase {
 				});
 			}
 		} catch (err) {
-			logger.fatal(
+			logger.error(
 				`${this.a_LogHeader(connection)} CRASH during processing of SU command "${command}". Logic: ${this.constructor.name}\n` +
 				`Arguments: ${JSON.stringify(argv)}\nError: `,
 				err
@@ -693,7 +693,7 @@ export class AdministrationLogic extends LogicBase {
 					`Yes: ${result.yes}  No: ${result.no}  Did not vote: ${result.didNotVote}`
 				);
 			}
-		}, logger.fatal.bind(logger));
+		}, logger.error.bind(logger));
 	}
 	//#endregion
 
@@ -748,7 +748,7 @@ export class AdministrationLogic extends LogicBase {
 			target.Kick().then(() => {
 				// Reset points to 0, resetting roomguard for specific user after kicking
 				data!.points = 0;
-			}, logger.fatal.bind(logger));
+			}, logger.error.bind(logger));
 
 			if (canBeBannedUntil != null && canBeBannedUntil >= Date.now()) {
 				this.a_start_kickvote(target.connection, true, target, target.connection.Player, "Room Guard™ detected repeated, likely disruptive or spammy actions.");
@@ -854,7 +854,7 @@ Please be nice to other people that want to just enjoy themselves. Thank you!
 				} else if (["Chat", "Emote", "Whisper"].includes(event.message.Type)) {
 					logger.info(msg);
 				} else {
-					logger.verbose(msg);
+					logger.debug(msg);
 				}
 			}
 		}
@@ -913,7 +913,7 @@ Please be nice to other people that want to just enjoy themselves. Thank you!
 						const result = commandInfo.callback(event.connection, argv, event.Sender);
 						if (result) {
 							result.catch(err => {
-								logger.fatal(
+								logger.error(
 									`${this.a_LogHeader(event.connection)} CRASH during async processing of command "${command}". Logic: ${this.constructor.name}\n` +
 									`Arguments: ${JSON.stringify(argv)}\nError: `,
 									err
@@ -921,7 +921,7 @@ Please be nice to other people that want to just enjoy themselves. Thank you!
 							});
 						}
 					} catch (err) {
-						logger.fatal(
+						logger.error(
 							`${this.a_LogHeader(event.connection)} CRASH during processing of command "${command}". Logic: ${this.constructor.name}\n` +
 							`Arguments: ${JSON.stringify(argv)}\nError: `,
 							err
@@ -933,7 +933,7 @@ Please be nice to other people that want to just enjoy themselves. Thank you!
 						const result = commandInfo.callback(event.connection, args, event.Sender);
 						if (result) {
 							result.catch(err => {
-								logger.fatal(
+								logger.error(
 									`${this.a_LogHeader(event.connection)} CRASH during async processing of command "${command}". Logic: ${this.constructor.name}\n` +
 									`Arguments: ${JSON.stringify(args)}\nError: `,
 									err
@@ -941,7 +941,7 @@ Please be nice to other people that want to just enjoy themselves. Thank you!
 							});
 						}
 					} catch (err) {
-						logger.fatal(
+						logger.error(
 							`${this.a_LogHeader(event.connection)} CRASH during processing of command "${command}". Logic: ${this.constructor.name}\n` +
 							`Arguments: ${JSON.stringify(args)}\nError: `,
 							err
@@ -992,7 +992,7 @@ Please be nice to other people that want to just enjoy themselves. Thank you!
 			);
 			const curseVersion = event.character.getCurseVersion();
 			if (curseVersion !== null) {
-				logger.verbose(`${this.a_LogHeader(event.connection)} ${event.character.Name} (${event.character.MemberNumber})` +
+				logger.debug(`${this.a_LogHeader(event.connection)} ${event.character.Name} (${event.character.MemberNumber})` +
 					` uses curse version: ${curseVersion}`
 				);
 			}
@@ -1077,7 +1077,7 @@ Please be nice to other people that want to just enjoy themselves. Thank you!
 			if (fromBot) {
 				logger.debug(msg);
 			} else {
-				logger.verbose(msg);
+				logger.debug(msg);
 			}
 		}
 

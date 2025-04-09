@@ -34,6 +34,16 @@ export class CommandParser {
 
     public register(cmd: string, cb: CommandCallback) {
         this.commands.set(cmd, cb);
+        logger.info(`Command "${cmd}" registered.`);
+    }
+
+    public unregister(cmd: string): void {
+        if (this.commands.has(cmd)) {
+            this.commands.delete(cmd);
+            logger.info(`Command "${cmd}" unregistered.`);
+        } else {
+            logger.warn(`Command "${cmd}" not found.`);
+        }
     }
 
     private onMessage = (ev: MessageEvent) => {
@@ -79,7 +89,7 @@ export class CommandParser {
                         });
                     }
                 } catch (e) {
-                    logger.log("Command handler threw exception", e);
+                    logger.error("Command handler threw exception", e);
                 }
                 return;
             }

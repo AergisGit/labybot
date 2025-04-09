@@ -51,7 +51,7 @@ export class SocketWrapper {
             const timeForLastMessageBatch = Date.now() - this.lastSendTimes[0];
             if (timeForLastMessageBatch < TIME_INTERVAL) {
                 const waitFor = TIME_INTERVAL - timeForLastMessageBatch;
-                logger.log(`Throttling messages for ${waitFor}ms`);
+                logger.warn(`Throttling messages for ${waitFor}ms`);
                 this.sendTimer = setTimeout(this.onSendTimer, waitFor);
                 return;
             } else {

@@ -146,7 +146,7 @@ export class API_Character {
     }
 
     public Tell(msgType: TellType, msg: string): void {
-        logger.log(`Tell (${msgType}) ${this}: ${msg}`);
+        logger.info(`Tell (${msgType}) ${this}: ${msg}`);
         this.connection.SendMessage(msgType, msg, this.data.MemberNumber);
     }
 

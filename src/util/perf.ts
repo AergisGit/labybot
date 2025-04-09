@@ -40,13 +40,13 @@ export class PerfLogger {
         return;
     }
     const duration = (performance.now() - start).toFixed(2);
-    this.log.info(`${label}: ${duration}ms`);
+    this.log.debug(`${label}: ${duration}ms`);
     this.timers.delete(id);
   }
 
   /*log(label: string, message: string): void {
     if (!this.enabled) return;
-    this.log.info(`${label}: ${message}`);
+    this.log.debug(`${label}: ${message}`);
   }*/
 }
 

@@ -228,7 +228,7 @@ export class API_Connector extends EventEmitter {
         dict?: Record<string, any>[],
     ): void {
         if (msg.length > 1000) {
-            logger.error("Message too long, truncating");
+            logger.warn("Message too long, truncating");
             msg = msg.substring(0, 1000);
         }
 
@@ -311,7 +311,7 @@ export class API_Connector extends EventEmitter {
     };
 
     private onSocketConnectError = (err: Error) => {
-        logger.log(`Socket connect error: ${err.message}`);
+        logger.error(`Socket connect error: ${err.message}`);
     };
 
     private onSocketReconnect = () => {
@@ -323,7 +323,7 @@ export class API_Connector extends EventEmitter {
     };
 
     private onSocketDisconnect = () => {
-        logger.log("Socket disconnected");
+        logger.warn("Socket disconnected");
         this.loggedIn = new PromiseResolve<void>();
         this.roomSynced = new PromiseResolve<void>();
     };
@@ -343,7 +343,7 @@ export class API_Connector extends EventEmitter {
             this.emit("LoginError", resp);
             return;
         }*/
-        logger.log("Got login response", resp);
+        //logger.log("Got login response", resp);
         this._player = new API_Character(resp, this, undefined);
         this.loggedIn.resolve();
     };
@@ -452,7 +452,7 @@ export class API_Connector extends EventEmitter {
     };
 
     private onChatRoomSyncCharacter = (resp: any) => {
-        logger.log("sync character", resp);
+        //logger.log("sync character", resp);
         this._chatRoom.characterSync(
             resp.Character.MemberNumber,
             resp.Character,
@@ -623,7 +623,7 @@ export class API_Connector extends EventEmitter {
 
         const joinResult = await this.roomJoinPromise.prom;
         if (joinResult !== "JoinedRoom") {
-            logger.log("Failed to join room", joinResult);
+            logger.error("Failed to join room", joinResult);
             return false;
         }
 
@@ -654,7 +654,7 @@ export class API_Connector extends EventEmitter {
 
         const createResult = await this.roomCreatePromise.prom;
         if (createResult !== "ChatRoomCreated") {
-            logger.log("Failed to create room", createResult);
+            logger.error("Failed to create room", createResult);
             return false;
         }
 
@@ -680,7 +680,7 @@ export class API_Connector extends EventEmitter {
             const joinResult = await this.ChatRoomJoin(roomDef.Name);
             if (joinResult) return;
 
-            logger.log("Failed to join room, trying to create...", roomDef);
+            logger.error("Failed to join room, trying to create...", roomDef);
             const createResult = await this.ChatRoomCreate(roomDef);
             if (createResult) return;
 
@@ -808,5 +808,14 @@ export class API_Connector extends EventEmitter {
             X: x,
             Y: y,
         });
+    }
+
+    public disconnect(): void {
+        logger.info("Disconnecting from the server...");
+        this.sock.disconnect(); // Disconnect the socket
+        this.bot = undefined; // Clear the bot reference
+        this._chatRoom = undefined; // Clear the chat room reference
+        this._player = undefined; // Clear the player reference
+        logger.info("Disconnected successfully.");
     }
 }

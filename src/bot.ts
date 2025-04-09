@@ -12,12 +12,13 @@
  * limitations under the License.
  */
 
-import { logger } from './api';
+import { decompressFromBase64, compressToBase64 } from "lz-string";
+import { Logger } from './api';
 import { KidnappersGameRoom } from "./hub/logic/kidnappersGameRoom";
 import { API_Connector } from "./apiConnector";
+import { API_Chatroom_Data } from "./apiChatroom";
 import { RoleplaychallengeGameRoom } from "./hub/logic/roleplaychallengeGameRoom";
 import { Dare } from "./games/dare";
-import { readFile } from "fs/promises";
 import { ConfigFile, getDefaultConfig } from "./config";
 import { Db, MongoClient } from "mongodb";
 import { PetSpa } from "./games/petspa";
@@ -31,135 +32,196 @@ const SERVER_URL = {
     test: "https://bondage-club-server-test.herokuapp.com/",
 };
 
-export interface RopeyBot {
-    connector: API_Connector;
-    config: ConfigFile;
-    db?: Db;
-    game: string;
-}
+export class BotManager {
+    private config: ConfigFile;
+    private connector?: API_Connector;
+    private mongoClient?: MongoClient
+    private db?: Db;
+    private gameInstance?: any;
+    public log: Logger;
 
-export async function startBot(configOverride?: ConfigFile): Promise<RopeyBot> {
-    process.on("SIGINT", () => {
-        logger.log("SIGINT received, exiting");
-        process.exit(0);
-    });
+    constructor(private configOverride?: ConfigFile) {
 
-    process.on("SIGTERM", () => {
-        logger.log("SIGTERM received, exiting");
-        process.exit(0);
-    });
+        this.log = new Logger('BOTM', 'debug', true, 'red');
+    }
 
-    let config: ConfigFile;
+    public async startBot(): Promise<void> {
+        this.config = this.configOverride || await getDefaultConfig();
+        const serverUrl = this.config.url ?? SERVER_URL[this.config.env];
 
-    if (configOverride) {
-        config = configOverride;
-    } else {
-        /*const cfgFile = process.argv[2] ?? "./config.json";
-        const configString = await readFile(cfgFile, "utf-8");
-        config = JSON.parse(configString) as ConfigFile;*/
+        if (!serverUrl) {
+            this.log.log("env must be live or test");
+            throw new Error("Invalid environment configuration");
+        }
+
+        if (this.config.mongo_uri && this.config.mongo_db) {
+            this.mongoClient = new MongoClient(this.config.mongo_uri, {
+                ssl: true,
+                tls: true,
+            });
+            this.log.log("Connecting to mongo...");
+            await this.mongoClient.connect();
+            this.log.log("...connected!");
+            this.db = this.mongoClient.db(this.config.mongo_db);
+            await this.db.command({ ping: 1 });
+            this.log.log("...ping successful!");
+        }
+
+        this.connector = new API_Connector(
+            serverUrl,
+            this.config.user,
+            this.config.password,
+            this.config.env,
+        );
+        await this.connector.joinOrCreateRoom(this.config.room);
+
+        await this.startGame();
+    }
+
+    public async startGame(): Promise<void> {
+        if (this.gameInstance !== undefined) {
+            this.log.error("Game was already started.");
+            throw new Error("Game was already started.");
+        }
+        switch (this.config.game) {
+            case undefined:
+                break;
+            case "kidnappers":
+                this.log.log("Starting game: Kidnappers");
+                this.gameInstance = new KidnappersGameRoom(this.connector, this.config);
+                this.connector.accountUpdate({ Nickname: "Kidnappers Bot" });
+                this.connector.setBotDescription(KidnappersGameRoom.description);
+                this.connector.startBot(this.gameInstance);
+                break;
+            case "roleplay":
+                this.log.log("Starting game: Roleplay challenge");
+                this.gameInstance = new RoleplaychallengeGameRoom(this.connector, this.config);
+                this.connector.setBotDescription(RoleplaychallengeGameRoom.description);
+                this.connector.startBot(this.gameInstance);
+                break;
+            case "maidspartynight":
+                this.log.log("Starting game: Maid's Party Night");
+                if (!this.config.user2 || !this.config.password2) {
+                    this.log.error("Need user2 and password2 for Maid's Party Night");
+                    throw new Error("Missing user2 and password2 for Maid's Party Night");
+                }
+                const connector2 = new API_Connector(
+                    this.config.url ?? SERVER_URL[this.config.env],
+                    this.config.user2,
+                    this.config.password2,
+                    this.config.env,
+                );
+                this.gameInstance = new MaidsPartyNightSinglePlayerAdventure(this.connector, connector2);
+                this.connector.startBot(this.gameInstance);
+                break;
+            case "dare":
+                this.log.log("Starting game: Dare");
+                this.connector.accountUpdate({ Nickname: "Dare Bot" });
+                this.gameInstance = new Dare(this.connector);
+                this.connector.setBotDescription(Dare.description);
+                break;
+            case "petspa":
+                this.log.log("Starting game: Pet Spa");
+                this.gameInstance = new PetSpa(this.connector);
+                await this.gameInstance.init();
+                this.connector.setBotDescription(PetSpa.description);
+                break;
+            case "home":
+                this.log.log("Starting game: Home");
+                this.gameInstance = new Home(this.connector, this.config.superusers);
+                await this.gameInstance.init();
+                this.connector.setBotDescription(Home.description);
+                break;
+            case "laby":
+                this.log.log("Starting game: Labyrinthe");
+                this.gameInstance = new Laby(this.connector, this.config.superusers, this.config.gameName);
+                await this.gameInstance.init();
+                break;
+            case "casino":
+                this.log.log("Starting game: Casino");
+                this.gameInstance = new Casino(this.connector, this.db, this.config.casino);
+                break;
+            default:
+                this.log.error("No such game");
+                throw new Error("Invalid game configuration");
+        }
+    }
+
+    public async stopGame(): Promise<boolean> {
+        // Stop the game but keep the bot connected to the server
+
+        let stopped = false;
+        // Stop the current game instance
+        if (this.gameInstance && typeof this.gameInstance.stop === "function") {
+            this.log.log("Stopping the current game instance...");
+            this.gameInstance.stop();
+            this.gameInstance = undefined;
+            stopped = true;
+        } else {
+            this.log.warn("This game wasn't set to be stopped. Stop the bot before reset.");
+        }
+        return stopped;
+    }
+
+    public async stopBot(): Promise<void> {
+        this.log.info("Stopping bot...");
+
+        // Stop the current game instance
+        try {
+            await this.stopGame();
+        }
+        catch (e) {
+            this.log.warn(`Error trying to stop game before stopping Bot`);
+        }
+        this.gameInstance = undefined;
+
+        // Disconnect from the server
+        if (this.connector) {
+            this.log.info("Disconnecting from the server...");
+            this.connector.disconnect();
+            this.connector = undefined;
+        }
+
+        // Close the database connection
+        if (this.mongoClient) {
+            this.log.info("Closing the database connection...");
+            await this.mongoClient.close();
+            this.mongoClient = undefined;
+            this.db = undefined;
+        }
+
+        this.log.info("Bot stopped successfully.");
+
+    }
+
+    public getGameStatus() {
+        let isgameRunning: boolean = Boolean(this.gameInstance);
+        let game: string = this.config.game;
+        let gameName: string = this.config.gameName;
+
+        return {
+            botName: this.connector?.Player.Name,
+            botNumber: this.connector?.Player.MemberNumber,
+            isRunning: isgameRunning || false,
+            game: game || null,
+            gameName: gameName || null,
+        };
+
+    }
+    public getRoomInfos() {
+        let playerCount: number = this.connector?.chatRoom?.charactersCount;
+        let roomData: API_Chatroom_Data = JSON.parse(JSON.stringify(this.connector?.chatRoom?.roomData));
+        let roomMap: string = compressToBase64(JSON.stringify(this.connector?.chatRoom?.roomData?.MapData));
         
-        config = await getDefaultConfig();
-    }
-    
-    const serverUrl = config.url ?? SERVER_URL[config.env];
-
-    if (!serverUrl) {
-        logger.log("env must be live or test");
-        process.exit(1);
+        return {
+            playerCount: playerCount || 0,
+            roomData: roomData || undefined,
+            roomMap: roomMap || undefined
+        };
     }
 
-    let db;
-    if (config.mongo_uri && config.mongo_db) {
-        const mongoClient = new MongoClient(config.mongo_uri, {
-            ssl: true,
-            tls: true,
-        });
-        logger.log("Connecting to mongo...");
-        await mongoClient.connect();
-        logger.log("...connected!");
-        db = mongoClient.db(config.mongo_db);
-        await db.command({ ping: 1 });
-        logger.log("...ping successful!");
+
+    public updateConfig(config: ConfigFile): void {
+        this.config = config;
     }
-
-    const connector = new API_Connector(
-        serverUrl,
-        config.user,
-        config.password,
-        config.env,
-    );
-    await connector.joinOrCreateRoom(config.room);
-
-    switch (config.game) {
-        case undefined:
-            break;
-        case "kidnappers":
-            logger.log("Starting game: Kidnappers");
-            const kidnappersGame = new KidnappersGameRoom(connector, config);
-            connector.accountUpdate({ Nickname: "Kidnappers Bot" });
-            connector.setBotDescription(KidnappersGameRoom.description);
-            connector.startBot(kidnappersGame);
-            break;
-        case "roleplay":
-            logger.log("Starting game: Roleplay challenge");
-            const roleplayGame = new RoleplaychallengeGameRoom(
-                connector,
-                config,
-            );
-            connector.setBotDescription(RoleplaychallengeGameRoom.description);
-            connector.startBot(roleplayGame);
-            break;
-        case "maidspartynight":
-            logger.log("Starting game: Maid's Party Night");
-            if (!config.user2 || !config.password2) {
-                logger.log("Need user2 and password2 for Maid's Party Night");
-                process.exit(1);
-            }
-            const connector2 = new API_Connector(
-                serverUrl,
-                config.user2,
-                config.password2,
-                config.env,
-            );
-            const maidsPartyNightGame = new MaidsPartyNightSinglePlayerAdventure(connector, connector2);
-            connector.startBot(maidsPartyNightGame);
-            break;
-        case "dare":
-            logger.log("Starting game: dare");
-            connector.accountUpdate({ Nickname: "Dare Bot" });
-            new Dare(connector);
-            connector.setBotDescription(Dare.description);
-            break;
-        case "petspa":
-            logger.log("Starting game: Pet Spa");
-            const petSpaGame = new PetSpa(connector);
-            await petSpaGame.init();
-            connector.setBotDescription(PetSpa.description);
-            break;
-        case "home":
-            logger.log("Starting game: Home");
-            const homeGame = new Home(connector, config.superusers);
-            await homeGame.init();
-            connector.setBotDescription(Home.description);
-            break;
-        case "laby":
-            logger.log("Starting game: Labyrinthe");
-            const labyGame = new Laby(connector, config.superusers, config.gameName);
-            await labyGame.init();
-            break;
-        case "casino":
-            logger.log("Starting game: Casino");
-            new Casino(connector, db, config.casino);
-            break;
-        default:
-            logger.log("No such game");
-            process.exit(1);
-    }
-
-    return {
-        connector,
-        config,
-        db,
-        game: config.game,
-    };
 }

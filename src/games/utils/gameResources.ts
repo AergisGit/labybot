@@ -7,7 +7,7 @@ import { Logger } from '../../api';
 
 export interface ResourceData {
   map: string;
-  bot_position: CoordObject;
+  botPosition: CoordObject;
   triggersData?: TriggerDef[];
 }
 
@@ -43,31 +43,18 @@ export class ResourceLoader {
         typeof data.botPosition !== 'object' ||
         !Array.isArray(data.triggersData)
       ) {
-        this.log.error(`Le fichier ${resourceName}.json ne contient pas les données attendues.`);
+        this.log.error(`The content of file ${resourceName}.json isn't valid`);
         return null;
       }
 
       return {
         map: data.map,
-        bot_position: data.bot_position,
+        botPosition: data.botPosition,
         triggersData: data.triggersData,
       };
     } catch (error) {
-      this.log.error(`Erreur lors du chargement du fichier ${resourceName}.json :`, error);
+      this.log.error(`Error while loading ${resourceName}.json :`, error);
       return null;
     }
   }
 }
-
-/*
-// Exemple d'utilisation
-const resourceLoader = new ResourceLoader('laby');
-
-// Charger une ressource spécifique
-const resourceData = resourceLoader.loadResource('yumi1');
-if (resourceData) {
-  console.log('Carte :', resourceData.map);
-  console.log('Position du bot :', resourceData.bot_position);
-  console.log('Données des triggers :', resourceData.triggersData);
-}
-*/

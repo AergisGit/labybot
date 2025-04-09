@@ -12,28 +12,36 @@
  * limitations under the License.
  */
 
-import { logger } from './api';
+import { Logger, logger } from './api';
 //import { startBot } from "./bot";
-import { BotManager } from './admin/botManager'
+import { GameManager } from './admin/gameManager'
 import { AdminServer } from './admin/adminServer';
 
 
 async function main() {
-    /*const { game } = await startBot();
+    const log = new Logger("MAIN", "debug", true, 'red' );
 
-    if (!game) {
-        logger.error("No game specified!");
-        process.exit(1);
-    }*/
-        // Start BotManager
-        const botManager = new BotManager();
-        await botManager.initialize();  // Charger la config et démarrer le bot
-        logger.info('BotManager started');
-    
-        // 3. Démarrage du serveur d'administration
-        const adminServer = new AdminServer(botManager);
-        adminServer.startAdminServer(); 
-        logger.info('AdminServer started');
+    // Start GameManager
+    const gameManager = new GameManager();
+    await gameManager.initialize();  // Charger la config et démarrer le bot
+    log.info('GameManager started');
+
+    // Start AdminServer
+    const adminServer = new AdminServer(gameManager);
+    adminServer.startAdminServer();
+    log.info('AdminServer started');
+
+
+
+    process.on("SIGINT", () => {
+        log.info("SIGINT received, exiting");
+        process.exit(0);
+    });
+
+    process.on("SIGTERM", () => {
+        log.info("SIGTERM received, exiting");
+        process.exit(0);
+    });
 }
 
 main().catch((e) => {

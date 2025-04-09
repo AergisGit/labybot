@@ -28,8 +28,8 @@ export interface ConfigFile {
     mongo_uri?: string;
     mongo_db?: string;
 
-    user2: string;
-    password2: string;
+    user2?: string;
+    password2?: string;
 
     casino?: CasinoConfig;
 }

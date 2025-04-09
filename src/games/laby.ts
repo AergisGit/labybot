@@ -17,7 +17,7 @@
 import { decompressFromBase64, compressToBase64 } from "lz-string";
 import { API_Connector, CoordObject } from "../apiConnector";
 import { API_Character } from "../apiCharacter";
-import { BC_AppearanceItem, API_AppearanceItem } from "../item";
+import { AssetGet, BC_AppearanceItem, API_AppearanceItem } from "../item";
 import { CommandParser } from "../commandParser";
 import { BC_Server_ChatRoomMessage } from "../logicEvent";
 import { formatDuration, wait} from "../util/time";
@@ -109,8 +109,7 @@ export class Laby {
         const resourceData:ResourceData = resourceLoader.loadResource(gameName);
         if (resourceData) { // le temps du debug
             this.log.debug('ResourceData - map: ', resourceData.map);
-            this.log.debug('ResourceData - bot_position: ', resourceData.bot_position);
-            this.log.debug('ResourceData - triggersData: ', resourceData.triggersData);
+            this.log.debug('ResourceData - botPosition: ', resourceData.botPosition);
         }
 
         // Déclancheur sur reception d'un message peut importe son contenu
@@ -126,6 +125,10 @@ export class Laby {
         // Add triggers to the map using the TriggerManager
         this.triggerManager.addTriggersFromData(triggersData, this.onWalkTriggerActivated.bind(this));  // Pass callback
 
+
+        // Debug trigger mit manuellement :
+        //this.conn.chatRoom.map.addTileTrigger({"X":8,"Y":27}, this.onCharacterEnterTrolley);
+
     }
 
     // Cette fonction d'initalisation est appelée après la constructeur
@@ -137,6 +140,33 @@ export class Laby {
         await this.setupCharacter();
 
         this.loadDataFromFile();
+    }
+
+
+    public stop(): boolean {
+        this.log.info("Stopping Laby game...");
+    
+        // Désenregistrer les listeners dans conn
+        this.conn.off("RoomCreate", this.onChatRoomCreated);
+        this.conn.off("RoomJoin", this.onChatRoomJoined);
+    
+        // Nettoyer les triggers dans triggerManager
+        this.triggerManager.clearAllTriggers();
+        
+        // Nettoyer les triggers placés en dur :
+        //this.conn.chatRoom.map.removeTileTrigger(8,27, this.onCharacterEnterTrolley);
+
+        // Désenregistrer les commandes dans commandParser
+        this.commandParser.unregister("fame");
+        this.commandParser.unregister("who");
+        this.commandParser.unregister("time");
+        this.commandParser.unregister("free");
+        this.commandParser.unregister("updateroom");
+        this.commandParser.unregister("reset");
+        this.commandParser.unregister("debug");
+
+        this.log.info("Laby game stopped.");
+        return true;
     }
 
 
@@ -169,7 +199,7 @@ export class Laby {
         const id = perf.start("onWalkTriggerActivated");
         
 
-        this.log.debug(`Trigger: ${triggerData.name} - Actions: ${triggerData.actions}`);
+        this.log.info(`Trigger: ${triggerData.name} - Actions: ${triggerData.actions}`);
         for (const action of triggerData.actions) {
             switch (action) {
                 case "Whisper":
@@ -275,8 +305,6 @@ export class Laby {
 
                         if (Array.isArray(linkData)) {
                             // Initialisation
-                            let itemsToLock: API_AppearanceItem[] = []; // Initialisation du tableau
-
                             
                             // Tri des items avant la boucle
                             const idPerfTri = perf.start("sortedLinkData");
@@ -287,37 +315,28 @@ export class Laby {
                             for (const bondageItemData of sortedLinkData) {
                                 if (isBCAppearanceItem(bondageItemData)) {
                                     this.log.debug(`Using item: ${bondageItemData.Name} in group ${bondageItemData.Group}`);
-
+                                    
                                     const bondageItem = character.Appearance.AddItem(bondageItemData);
-                                    await wait(100);
+                                    bondageItem.lock("TimerPasswordPadlock", this.conn.Player.MemberNumber, {
+                                        Password: "YUMILABY",
+                                        Hint: "Eight letters, where are you?",
+                                        RemoveItem: true,
+                                        RemoveTimer: Date.now() + minutesLocked * 60 * 1000,
+                                        ShowTimer: true,
+                                        LockSet: true,
+                                    });
 
-                                    if(doLock && bondageItemGroups.includes(bondageItemData.Group)) {
-                                        itemsToLock.push(bondageItem);
-                                    }
+                                    await wait(100);
                                 } else {
                                     this.log.error("Invalid item format!");
                                 }
-                            }
-                            
-                            this.log.debug("Lock items.");
-                            for(const itemToLock of itemsToLock) {
-                                this.log.debug("Lock item ", itemToLock.getData().Name ," itemToLock", itemToLock );
-                                itemToLock.lock("TimerPasswordPadlock", this.conn.Player.MemberNumber, {
-                                    Password: "YUMILABY",
-                                    Hint: "Eight letters, where are you?",
-                                    RemoveItem: true,
-                                    RemoveTimer: Date.now() + minutesLocked * 60 * 1000,
-                                    ShowTimer: true,
-                                    LockSet: true,
-                                });
-                                await wait(100);
                             }
                         }
                     }
                     break;
         
                 default:
-                    this.log.debug(`Unknown action: ${action}`);
+                    this.log.warn(`Unknown action: ${action}`);
                     // Traitement par défaut si l'action n'est pas reconnue
                     break;
             }
@@ -328,7 +347,7 @@ export class Laby {
     
 
     private async freeCharacter(character: API_Character): Promise<void> {
-        this.log.debug("!free - Remove bondage items");
+        this.log.info("!free - Remove bondage items");
         for( const ItemGroup of bondageItemGroups ) {
             character.Appearance.RemoveItem(ItemGroup);
             await wait(100);
@@ -618,5 +637,40 @@ export class Laby {
             }
         }
     };
+
+    /*
+    private onCharacterEnterTrolley = async (character: API_Character) => {
+        
+        this.log.debug("trolley - On va mettre le trolley");
+        // Le bot "attache" le trolley qui est de type itemDevices (case en bas à droite sur l'itnerface) au joueur declanchant l'evenement
+        const bondageDevice = character.Appearance.AddItem(AssetGet("ItemDevices", "Trolley"));
+        // Le trolley est un craft spécifique avec une description et un nom
+        this.log.debug("trolley - on va en faire un craft");
+        bondageDevice.SetCraft({ 
+            Name: `Standard Trolley`,
+            Description: `A standard Trolley, used to easily transport bound slaves on wheels.`,
+        });
+        const bondageArms = character.Appearance.AddItem(AssetGet("ItemArms", "HighSecurityStraitJacket"));
+        bondageArms.setProperty("TypeRecord", { c: 1, a : 1, s: 3 });
+        //await wait(500);
+        this.log.debug("trolley - on va fermer");
+        // Le trolley passe en extended type "closed" avec les boucles fermées (ce sont les cases de choix qu'on voit sur l'interface)
+        bondageDevice.Extended.SetType("Closed"); 
+        this.log.debug("trolley - on va changer la diff");
+        bondageDevice.SetDifficulty(20);
+        
+        //await wait(1000);
+        this.log.debug("trolley - on va lock");
+        // mise en place du cadenas avec un TimerPasswordPadlock de 5 minutes (l'unité de temps est en milisecondes)
+        bondageDevice.lock("TimerPasswordPadlock", this.conn.Player.MemberNumber, {
+            Password: "DEBUG",
+            Hint: "Your host.",
+            RemoveItem: true,
+            RemoveTimer: Date.now() + 5 * 60 * 1000,
+            ShowTimer: true,
+            LockSet: true,
+        });
+        this.log.debug("trolley - apres");
+    }*/
 
 }

@@ -80,6 +80,9 @@ export class API_Chatroom extends EventEmitter {
     public get charactersCount(): number {
         return this.data.Character.length;
     }
+    public get roomData(): API_Chatroom_Data {
+        return JSON.parse(JSON.stringify(this.data));
+    }
 
     public update(data: Partial<API_Chatroom_Data>) {
         Object.assign(this.data, data);
@@ -254,7 +257,7 @@ export class API_Chatroom extends EventEmitter {
         try {
             this.map.onCharacterMove(char, prevPos);
         } catch (e) {
-            logger.log("Error handling character move", e);
+            logger.error("Error handling character move", e);
         }
     }
 

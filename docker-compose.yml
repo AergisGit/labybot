@@ -1,15 +1,17 @@
-version: '3.8'
-
 services:
   labybot:
-    image: labybot:0.0.3
+    image: labybot:0.0.6
     container_name: labybot
+    pull_policy: never # Force using local image
     volumes:
-      - ./config2.json:/bot/config.json
+      - ./config_Yumi.json:/bot/config.json
+      - ./resources:/bot/resources
       - labybot_data:/bot/save
+    ports:
+      - "3000:3000"
     stdin_open: true
     tty: true
 
 volumes:
   labybot_data:
-    external: true
+    name: labybot_data

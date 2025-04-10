@@ -30,6 +30,7 @@ export interface ConfigFile {
 
     user2?: string;
     password2?: string;
+    game2?: string;
 
     casino?: CasinoConfig;
 }

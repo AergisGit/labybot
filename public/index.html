@@ -31,7 +31,7 @@
     <script>
         async function fetchStatus() {
             try {
-                const res = await fetch('/bot/0/status');
+                const res = await fetch('/api/bot/0/status');
                 if (!res.ok) throw new Error('Erreur lors de la récupération du statut');
                 const data = await res.json();
                 document.getElementById('botStatus').innerText =
@@ -66,7 +66,7 @@
 
         async function startBot() {
             try {
-                const res = await fetch('/bot/0/start', {
+                const res = await fetch('/api/bot/0/start', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ botId: 0 })
@@ -80,7 +80,7 @@
 
         async function stopBot() {
             try {
-                const res = await fetch('/bot/0/stop', {
+                const res = await fetch('/api/bot/0/stop', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ botId: 0 })
@@ -100,7 +100,7 @@
 
         async function startGame() {
             try {
-                const res = await fetch('/bot/0/game/start', {
+                const res = await fetch('/api/bot/0/game/start', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ botId: 0 })
@@ -114,7 +114,7 @@
 
         async function stopGame() {
             try {
-                const res = await fetch('/bot/0/game/stop', {
+                const res = await fetch('/api/bot/0/game/stop', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ botId: 0 })
@@ -133,7 +133,7 @@
 
         async function getBotConfig() {
             try {
-                const res = await fetch('/bot/0/config');
+                const res = await fetch('/api/bot/0/config');
                 if (!res.ok) throw new Error('Erreur lors de la récupération de la configuration');
                 const data = await res.json();
                 document.getElementById('botConfig').innerText = JSON.stringify(data, null, 2);
@@ -145,7 +145,7 @@
 
         async function getBotData() {
             try {
-                const res = await fetch('/bot/0/data');
+                const res = await fetch('/api/bot/0/data');
                 if (!res.ok) throw new Error('Erreur lors de la récupération des données');
                 const data = await res.json();
                 document.getElementById('botData').innerText = JSON.stringify(data, null, 2);

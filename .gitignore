@@ -1,9 +1,10 @@
 node_modules
 package-lock.json
 config.json
-config2.json
-commandes.txt
+config_*.json
 out
-src/games/laby/data
+resources/games/laby/yumi*
 resources/test.json
 TODO
+commandes.txt
+*.old

@@ -1,4 +1,17 @@
-# Ropeybot
+# Laby bot
+This is a fork of Ropeybot (https://github.com/FriendsOfBC/ropeybot)
+
+Additions/modifications :
+- Loggers
+- Labyrinth type game
+- Trigger management for map games (walk on zones od coordinates)
+- Resource management, to get game data from a file (ex : maps, bot description and position, triggers list)
+- Bot management, to restart bot, or game without restarting the whole thing
+- Administration client for a more visual aproach to the bot data and game status
+- Modifications to some core files for easier use in games
+
+
+Original features :
 
 A node-based BC bot based on the old bot-api. Its functionality is divided up into
 'games' and you configure the bot to run one of them via its config file.
@@ -47,15 +60,40 @@ The bot can either be run locally or via the Docker image.
  * Start the bot!
    `pnpm start`
 
-### Running with Docker
+### Running with Docker (Laby bot tested with Docker Desktop)
  * Install docker
  * Create a config file as in the steps for running locally
- * Run the bot, mapping in the config file you just made:
- `docker run --rm -it -v ${PWD}/config.json:/bot/cfg/config.json ghcr.io/FriendsOfBC/ropeybot:main`
+ * Build your container (the dockerfile build it and then run it on a lighter Alpine image)
+  docker build -t labybot:0.0.6 .
 
-## Games
-The bot comes with some built games. In brackets is the value to use for 'game' in the config
-file to run that game.
+* Run the bot 
+    + setup in  in the config file you just made
+    + the resources (for Laby) and the save volume (for Laby Hall of Fame)
+    + the port for the React Administration Web page
++ Using the docker image through a command line:
+
+  docker run --rm -it -v %cd%\config.json:/bot/config.json -v %cd%\resources:/bot/resources -v labybot_data:/bot/save -p 3000:3000 labybot:0.0.6
+
++ Or using the docker-compose file (check the config file name according to yours):
+  docker compose up
+
+
+## Games (Added on Laby bot)
+This bot version gets some new games, based on Pet Spa.
+In brackets is the value to use for 'game' in the config file to run that game.
+
+### Home ('home')
+This is a small home, with different ways of using triggers. Try to *push* the candelabra
+in the bedroom, and maybe avoid the bondage devices.
+
+### Laby ('laby')
+This is a labyrinth kind of game, whith an entry and an exit, and different mechanisms that
+can be triggered according to yous resource file configuration.
+
+
+## Games (Originals)
+The bot comes with some built games.
+In brackets is the value to use for 'game' in the config file to run that game.
 
 ### Dare Game ('dare')
 A very simple game where players add dares and then draw them without knowing who added

@@ -1,167 +1,69 @@
 import express, { RequestHandler } from "express";
 import path from 'path';
-import { GameManager } from "./gameManager";
+import { createServer } from 'http';
+import { setupSocketServer } from './socketServer';
+import { GameManager } from "../core/gameManager";
+import { apiRoutes } from './routes';
 import { Logger } from "../api";
 
 export class AdminServer {
-  private app: express.Application;
-  private gameManager: GameManager;
   public log: Logger;
+  private app: express.Application;
+  private httpServer: ReturnType<typeof createServer>;
+  private gameManager: GameManager;
 
   constructor(gameManager: GameManager) {
+    this.log = new Logger("APIS", "debug", true, "cyan");
     this.app = express();
     this.gameManager = gameManager;
-    this.log = new Logger("APIS", "debug", true, "cyan");
 
     // Middleware to parse JSON requests
     this.app.use(express.json());
-    
-    // Static website
-    this.app.use(express.static(path.join(__dirname, "./public"))); // Sert la page HTML
 
+    // Serve React application
+    this.log.debug('Public path:', path.join(__dirname, './public'));
+    this.app.use(express.static(path.join(__dirname, './public')));
+
+    // Créer un serveur HTTP pour inclure WebSocket
+    this.httpServer = createServer(this.app);
+
+    // Configurer le serveur WebSocket
+    setupSocketServer(this.httpServer, this.gameManager);
 
     // Route Handlers
+
+    // Un handler pour le fallback React
+    const reactFallbackHandler: RequestHandler = (req, res) => {
+      this.log.info(`Fallback route hit ?`);// for path: ${req.path}`);
+      res.sendFile(path.join(__dirname, './public', 'index.html'));
+    };
 
     // Test api
     const doSomeTest: RequestHandler = (req, res) => {
       const someTest = "I did some test !"
       this.log.debug("someTest");
-      res.json({"info": someTest});
+      res.json({ "info": someTest });
     };
 
-
-    // Get bot status
-    const getBotStatusHandler: RequestHandler<{ botId: string }> = (req, res) => {
-      const botId = parseInt(req.params.botId);
-      if (isNaN(botId)) {
-        res.status(400).send("Invalid botId");
-        this.log.warn(`Could not get status of bot [${botId}].`)
-        return
-      }
-      res.json(this.gameManager.getBotStatus(botId));
-    };
-
-    // Get bot Config
-    const getBotConfigHandler: RequestHandler<{ botId: string }> = (req, res) => {
-      const botId = parseInt(req.params.botId);
-      if (isNaN(botId)) {
-        res.status(400).send("Invalid botId");
-        this.log.warn(`Could not get config of bot [${botId}].`)
-        return
-      }
-      res.json(this.gameManager.getBotConfig(botId));
-    };
-
-    // Get bot Config
-    const getBotDataHandler: RequestHandler<{ botId: string }> = (req, res) => {
-      const botId = parseInt(req.params.botId);
-      if (isNaN(botId)) {
-        res.status(400).send("Invalid botId");
-        this.log.warn(`Could not get data of bot [${botId}].`)
-        return
-      }
-      res.json(this.gameManager.getBotData(botId));
-    };
-
-    // Start bot
-    const startBotHandler: RequestHandler = (req, res) => {
-      const { botId } = req.body;
-      this.log.info(`Start bot [${botId}].`);
-      if (botId !== undefined && botId !== null) {
-        this.gameManager.startBot(botId);
-        res.status(200).send(`Bot ${botId} started`);
-      } else {
-        res.status(400).send("botId required");
-      }
-    };
-
-    // Stop bot
-    const stopBotHandler: RequestHandler = (req, res) => {
-      const { botId } = req.body;
-      this.log.info(`Stop bot [${botId}].`);
-      if (botId !== undefined && botId !== null) {
-        this.gameManager.stopBot(botId);
-        res.status(200).send(`Bot ${botId} stopped`);
-      } else {
-        res.status(400).send("botId required");
-      }
-    };
-
-    // Restart bot
-    const restartBotHandler: RequestHandler = (req, res) => {
-      const { botId } = req.body;
-      this.log.info(`Restart bot [${botId}].`);
-      if (botId !== undefined && botId !== null) {
-        this.gameManager.restartBot(botId);
-        res.status(200).send(`Bot ${botId} restarted`);
-      } else {
-        res.status(400).send("botId required");
-      }
-    };
-
-
-    // Start game
-    const startGameHandler: RequestHandler<{ botId: string }> = (req, res) => {
-      const botId = parseInt(req.params.botId);
-      this.log.info(`Start game on bot [${botId}].`);
-      if (botId !== undefined && botId !== null) {
-        this.gameManager.startGame(botId);
-        res.status(200).send(`Game started on bot ${botId}`);
-      } else {
-        res.status(400).send("Invalid botId");
-      }
-    };
-
-    // Stop game
-    const stopGameHandler: RequestHandler<{ botId: string }> = (req, res) => {
-      const botId = parseInt(req.params.botId);
-      this.log.info(`Stop game on bot [${botId}].`);
-      if (botId !== undefined && botId !== null) {
-        this.gameManager.stopGame(botId);
-        res.status(200).send(`Game stopped on bot ${botId}`);
-      } else {
-        res.status(400).send("Invalid botId");
-      }
-    };
-
-    // Restart game
-    const restartGameHandler: RequestHandler<{ botId: string }> = (req, res) => {
-      const botId = parseInt(req.params.botId);
-      this.log.info(`Restart game on bot [${botId}].`);
-      if (botId !== undefined && botId !== null) {
-        this.gameManager.restartGame(botId);
-        res.status(200).send(`Game restarted on bot ${botId}`);
-      } else {
-        res.status(400).send("Invalid botId");
-      }
-    };
-
-
-    // Admin Routes
+    // Routes
 
     // Utils
-    this.app.get("/test", doSomeTest);
+    this.app.get("/api/test", doSomeTest);
 
-    // Bot
-    this.app.get("/bot/:botId/status", getBotStatusHandler);
-    this.app.get("/bot/:botId/config", getBotConfigHandler);
-    this.app.get("/bot/:botId/data", getBotDataHandler);
+    // Vers gameManager
+    this.app.use('/api', apiRoutes(this.gameManager));
 
-    this.app.post("/bot/:botId/start", startBotHandler);
-    this.app.post("/bot/:botId/stop", stopBotHandler);
-    this.app.post("/bot/:botId/restart", restartBotHandler);
-
-    // Game
-    this.app.post("/bot/:botId/game/start", startGameHandler);
-    this.app.post("/bot/:botId/game/stop", stopGameHandler);
-    this.app.post("/bot/:botId/game/restart", restartGameHandler);
+    // Client React
+    this.app.get('/*splat', reactFallbackHandler);
 
   }
 
   // Server express that will provide the static http files and  the api
   public startAdminServer(port: number = 3000) {
-    this.app.listen(port, () => {
+    this.httpServer.listen(port, () => {
       this.log.info("Admin server started on port ", port);
     });
   }
+
+
 }

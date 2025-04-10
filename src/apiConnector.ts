@@ -335,6 +335,7 @@ export class API_Connector extends EventEmitter {
         } else {
             logger.log("Server info:", info);
         }
+        this.emit('serverInfo', info); // Re-emit the event, I'll catch it in GameManager
     };
 
     private onLoginResponse = (resp: API_Character_Data) => {

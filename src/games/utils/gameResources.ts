@@ -6,8 +6,9 @@ import { Logger } from '../../api';
 
 
 export interface ResourceData {
-  map: string;
-  botPosition: CoordObject;
+  map?: string;
+  botPosition?: CoordObject;
+  botDescription?: string[];
   triggersData?: TriggerDef[];
 }
 
@@ -28,7 +29,7 @@ export class ResourceLoader {
   loadResource(resourceName: string): ResourceData | null {
     const filePath = path.join(this.baseDir, `${resourceName}.json`);
     if (!fs.existsSync(filePath)) {
-      this.log.error(`Le fichier ${filePath} n'existe pas.`);
+      this.log.error(`The file ${filePath} does not exist.`);
       return null;
     }
 
@@ -38,18 +39,20 @@ export class ResourceLoader {
 
       // Validation des données attendues
       if (
-
-        typeof data.map !== 'string' ||
-        typeof data.botPosition !== 'object' ||
-        !Array.isArray(data.triggersData)
+        (data.map && typeof data.map !== 'string') ||
+        (data.botPosition && typeof data.botPosition !== 'object') ||
+        (data.botDescription && !Array.isArray(data.botDescription)) ||
+        (data.triggersData && !Array.isArray(data.triggersData))
       ) {
         this.log.error(`The content of file ${resourceName}.json isn't valid`);
         return null;
       }
 
+      this.log.error(`The content of the file ${filePath} has been loadd.`);
       return {
         map: data.map,
         botPosition: data.botPosition,
+        botDescription: data.botDescription,
         triggersData: data.triggersData,
       };
     } catch (error) {

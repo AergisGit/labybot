@@ -320,6 +320,11 @@ export class KidnappersGameRoom extends AdministrationLogic {
 		this.tickTimer = setInterval(this.Tick.bind(this), 1000);
 		this.setActiveConfigFromTemplate("fiveOrSixPlayers");
 		this.setGameState("game_not_started", false);
+
+		
+		this.conn.accountUpdate({ Nickname: "Kidnappers Bot" });
+		this.conn.setBotDescription(KidnappersGameRoom.description);
+		this.conn.startBot(this);
 	}
 
 	active_config!: gameConfig;

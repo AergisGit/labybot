@@ -14,19 +14,33 @@
 
 import { Logger, logger } from './api';
 //import { startBot } from "./bot";
-import { GameManager } from './admin/gameManager'
+import { GameManager } from './core/gameManager'
 import { AdminServer } from './admin/adminServer';
 
 
 async function main() {
     const log = new Logger("MAIN", "debug", true, 'red' );
 
+    
+    log.info(" ▄█        ▄████████ ▀█████████▄  ▄██   ▄       ▀█████████▄   ▄██████▄      ███    ");
+    log.info("███       ███    ███   ███    ███ ███   ██▄       ███    ███ ███    ███ ▀█████████▄");
+    log.info("███       ███    ███   ███    ███ ███▄▄▄███       ███    ███ ███    ███    ▀███▀▀██");
+    log.info("███       ███    ███  ▄███▄▄▄██▀  ▀▀▀▀▀▀███      ▄███▄▄▄██▀  ███    ███     ███   ▀");
+    log.info("███     ▀███████████ ▀▀███▀▀▀██▄  ▄██   ███     ▀▀███▀▀▀██▄  ███    ███     ███    ");
+    log.info("███       ███    ███   ███    ██▄ ███   ███       ███    ██▄ ███    ███     ███    ");
+    log.info("███▌    ▄ ███    ███   ███    ███ ███   ███       ███    ███ ███    ███     ███    ");
+    log.info("█████▄▄██ ███    █▀  ▄█████████▀   ▀█████▀      ▄█████████▀   ▀██████▀     ▄████▀  ");
+    log.info("▀");
+
+
     // Start GameManager
+    log.info('Sarting GameManager...');
     const gameManager = new GameManager();
     await gameManager.initialize();  // Charger la config et démarrer le bot
     log.info('GameManager started');
 
     // Start AdminServer
+    log.info('Sarting AdminServer...');
     const adminServer = new AdminServer(gameManager);
     adminServer.startAdminServer();
     log.info('AdminServer started');

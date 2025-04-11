@@ -37,7 +37,7 @@ export interface ConfigFile {
 
 // Get config from file
 export async function getDefaultConfig(): Promise<ConfigFile> {
-    const cfgFile = process.argv[2] ?? "./config.json";
+    const cfgFile = process.argv[2] ?? "./config/config.json";
     const configString = await readFile(cfgFile, "utf-8");
 
     return  JSON.parse(configString) as ConfigFile;

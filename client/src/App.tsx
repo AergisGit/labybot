@@ -1,17 +1,19 @@
 import React, { useEffect, useState } from "react";
+import ReactJson from "@microlink/react-json-view";
+import TextareaAutosize from "react-textarea-autosize";
 import { useSocketContext } from "./context/SocketContext";
-import ErrorPage from "./components/ErrorPage";
+//import ErrorPage from "./components/ErrorPage";
+import GameControlPanel from "./components/GameControlPanel";
+import BotControlPanel from "./components/BotControlPanel";
 import "./App.css";
 
 const App: React.FC = () => {
     const { data, socket } = useSocketContext(); // Récupération des données en temps réel via le contexte
-    const [botStatus, setBotStatus] = useState("Chargement...");
     const [botRoomInfos, setBotRoomInfos] = useState("Chargement...");
     const [characters, setCharacters] = useState("Chargement...");
     const [map, setMap] = useState("Chargement...");
-    const [gameStatus, setGameStatus] = useState("Chargement...");
-    const [botData, setBotData] = useState("No data yet.");
-    const [serverInfo, setServerInfo] = useState("");
+    const [botData, setBotData] = useState<any>({}); // Typage explicite pour éviter les problèmes
+    const [serverInfo, setServerInfo] = useState("serverInfo : Chargement...");
 
     // Vérifier si le WebSocket est connecté ou si les données sont disponibles
     const hasSocket = socket?.connected;
@@ -38,16 +40,10 @@ const App: React.FC = () => {
     // Mettre à jour les données à partir du contexte
     useEffect(() => {
         if (data.botInfos) {
-            setBotStatus(
-                `${data.botInfos.connected ? "En ligne" : "Hors ligne"} : ${data.botInfos.botName} (${data.botInfos.botNumber})`,
-            );
+            //setBotData(JSON.stringify(data.botInfos, null, 2));
+            setBotData(data.botInfos || {});
 
-            setGameStatus(
-                `Jeu (${data.botInfos.gameRunning ? "Actif" : "Inactif"}) : ${data.botInfos.game || "N/A"}`,
-            );
-            setBotData(JSON.stringify(data.botInfos, null, 2));
-
-            setMap("Map :\n" + data.botInfos.roomMap);
+            setMap(`${data.botInfos.roomMap}`);
         }
 
         if (data.botInfos?.roomData) {
@@ -71,39 +67,7 @@ const App: React.FC = () => {
         }
     }, [data]);
 
-    // Actions pour démarrer/arrêter/redémarrer le bot
-    const startBot = async () => {
-        if (socket?.connected) {
-            console.log("Emitting startBot event with botId: 0");
-            socket.emit("startBot", { botId: 0 });
-            console.log("startBot event emitted");
-        } else {
-            console.error("Socket is not connected");
-        }
-    };
-    const stopBot = async () => {
-        socket?.emit("stopBot", { botId: 0 });
-    };
-
-    const restartBot = async () => {
-        await stopBot();
-        await startBot();
-    };
-
-    // Actions pour démarrer/arrêter/redémarrer le jeu
-    const startGame = async () => {
-        socket?.emit("startGame", { botId: 0 });
-    };
-
-    const stopGame = async () => {
-        socket?.emit("stopGame", { botId: 0 });
-    };
-
-    const restartGame = async () => {
-        await stopGame();
-        await startGame();
-    };
-
+    /*
     // Affichage des erreurs ou des données
     if (!hasSocket) {
         return (
@@ -118,7 +82,7 @@ const App: React.FC = () => {
         return (
             <ErrorPage message="Aucune donnée disponible. Veuillez patienter pendant que nous récupérons les informations." />
         );
-    }
+    }*/
 
     return (
         <div className="page">
@@ -127,28 +91,40 @@ const App: React.FC = () => {
             </header>
             <main className="container">
                 <section className="card">
+                    <div className="header-row">
+                        <div className="header-content">
+                            <BotControlPanel />
+                        </div>
+                        <div className="header-content">
+                            <GameControlPanel />
+                        </div>
+                    </div>
                     <p id="serverInfo">{serverInfo}</p>
-                    <h2>Bot</h2>
-                    <p id="botStatus">{botStatus}</p>
-                    <button onClick={startBot}>Démarrer</button>
-                    <button onClick={stopBot}>Arrêter</button>
-                    <button onClick={restartBot}>Redémarrer</button>
                     <p id="botRoomInfos">{botRoomInfos}</p>
                     <p id="characters">{characters}</p>
-                    <p id="map">{map}</p>
                 </section>
                 <section className="card">
-                    <h2>Game</h2>
-                    <p id="gameStatus">{gameStatus}</p>
-                    <button onClick={startGame}>Démarrer</button>
-                    <button onClick={stopGame}>Arrêter</button>
-                    <button onClick={restartGame}>Redémarrer</button>
+                    <p>Map :</p>
+                    <div className="map-container">
+                        <TextareaAutosize
+                            value={map}
+                            readOnly
+                            className="map-textarea"
+                        />
+                    </div>
                 </section>
 
                 <section className="card">
-                    <h1>Bot Data</h1>
-                    <h2>Bot room data</h2>
-                    <pre id="botData">{botData}</pre>
+                    <h1>Bot room data</h1>
+                    <div className="json-viewer">
+                        <ReactJson
+                            src={botData}
+                            theme="monokai"
+                            collapsed={1}
+                            displayDataTypes={false}
+                            enableClipboard={false}
+                        />
+                    </div>
                 </section>
             </main>
             <footer className="footer">

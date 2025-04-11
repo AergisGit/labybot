@@ -4,7 +4,7 @@ services:
     container_name: labybot
     pull_policy: never # Force using local image
     volumes:
-      - ./config_Yumi.json:/bot/config.json
+      - ./config:/bot/config
       - ./resources:/bot/resources
       - labybot_data:/bot/save
     ports:

@@ -231,6 +231,7 @@ export class API_Connector extends EventEmitter {
             logger.warn("Message too long, truncating");
             msg = msg.substring(0, 1000);
         }
+        logger.log(`Sending ${type}`, msg);
 
         const payload = { Type: type, Content: msg } as Record<string, any>;
         if (target) payload.Target = target;
@@ -530,8 +531,12 @@ export class API_Connector extends EventEmitter {
     };
 
     private onChatRoomMessage = (msg: BC_Server_ChatRoomMessage) => {
-        // Don't log BCX spam
-        if ( msg.Type !== "Status" && msg.Type !== "Hidden" && msg.Content !== "BCXMsg" ) {
+        // Filter onChatRoomMessage logs :
+        //  - "Status" (ex : start talking)
+        //  - "Hidden" 
+        //  - mod messages
+        const filterModList = ["BCXMsg", "BCEMsg", "LSCGMsg", "bctMsg", "MPA", "dogsMsg", "bccMsg", "ECHO_INFO2", "MoonCEBC"];
+        if (msg.Type !== "Status" && msg.Type !== "Hidden" && !filterModList.includes(msg.Content)) {
             logger.log("chat room message", msg);
         }
 
@@ -618,14 +623,19 @@ export class API_Connector extends EventEmitter {
         }
 
         this.roomJoinPromise = new PromiseResolve();
-        this.wrappedSock.emit("ChatRoomJoin", {
-            Name: name,
-        });
 
-        const joinResult = await this.roomJoinPromise.prom;
-        if (joinResult !== "JoinedRoom") {
-            logger.error("Failed to join room", joinResult);
-            return false;
+        try {
+            this.wrappedSock.emit("ChatRoomJoin", {
+                Name: name,
+            });
+
+            const joinResult = await this.roomJoinPromise.prom;
+            if (joinResult !== "JoinedRoom") {
+                logger.error("Failed to join room", joinResult);
+                return false;
+            }
+        } finally {
+            this.roomJoinPromise = undefined;
         }
 
         logger.log("Room joined");
@@ -633,7 +643,7 @@ export class API_Connector extends EventEmitter {
         await this.roomSynced.prom;
         this._player.chatRoom = this._chatRoom;
 
-        this.roomJoinPromise = undefined;
+        //this.roomJoinPromise = undefined;
 
         this.emit("RoomJoin");
 
@@ -648,15 +658,20 @@ export class API_Connector extends EventEmitter {
 
         logger.log("creating room");
         this.roomCreatePromise = new PromiseResolve();
-        this.wrappedSock.emit("ChatRoomCreate", {
-            Admin: [this._player.MemberNumber],
-            ...roomDef,
-        });
 
-        const createResult = await this.roomCreatePromise.prom;
-        if (createResult !== "ChatRoomCreated") {
-            logger.error("Failed to create room", createResult);
-            return false;
+        try {
+            this.wrappedSock.emit("ChatRoomCreate", {
+                Admin: [this._player.MemberNumber],
+                ...roomDef,
+            });
+
+            const createResult = await this.roomCreatePromise.prom;
+            if (createResult !== "ChatRoomCreated") {
+                logger.error("Failed to create room", createResult);
+                return false;
+            }
+        } finally {
+            this.roomCreatePromise = undefined;
         }
 
         logger.log("Room created");
@@ -664,7 +679,7 @@ export class API_Connector extends EventEmitter {
         await this.roomSynced.prom;
         this._player.chatRoom = this._chatRoom;
 
-        this.roomCreatePromise = undefined;
+        //this.roomCreatePromise = undefined;
 
         this.emit("RoomCreate");
 
@@ -796,7 +811,7 @@ export class API_Connector extends EventEmitter {
     }
 
     public accountUpdate(update: Partial<API_Character_Data>): void {
-        const actualUpdate = { ... update };
+        const actualUpdate = { ...update };
         if (actualUpdate.Appearance === undefined) {
             actualUpdate.Appearance = this.Player.Appearance.getAppearanceData();
         }

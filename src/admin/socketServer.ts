@@ -3,6 +3,7 @@ import { Server as HttpServer } from 'http';
 import { GameManager } from '../core/gameManager';
 import { registerBotEvents } from './events/botEvents';
 import { registerGameEvents } from './events/gameEvents';
+import { GAME_EVENTS, GameEvent } from './events/gameManagerEvents';
 import { Logger } from "../api";
 
 export const setupSocketServer = (httpServer: HttpServer, gameManager: GameManager) => {
@@ -20,20 +21,35 @@ export const setupSocketServer = (httpServer: HttpServer, gameManager: GameManag
         log.info(`Client connected: ${socket.id}`);
         //log.debug('New connection attempt', {id: socket.id,handshake: socket.handshake});
 
-        // Init des données à la connexion :
-        // Émettre des données après la connexion
+        // Init des données à la connexion, par un envoi immédiat :
         socket.emit('botInfos', gameManager.getBotStatus(0));
+
+        // Events for the game manager
+        // Create Map to stock listeners
+        const listeners = new Map<GameEvent, (data: any) => void>();
+
+        // Automatically register all events from GAME_EVENTS
+        GAME_EVENTS.forEach((eventName) => {
+            const listener = (data: any) => {
+                socket.emit(eventName, data);
+                log.debug(`Emitted ${eventName} event to client ${socket.id}`);
+            };
+            
+            listeners.set(eventName, listener);
+            gameManager.on(eventName, listener);
+        });
 
         // Events for the bot and game
         registerBotEvents(socket, gameManager);
         registerGameEvents(socket, gameManager);
 
-        // Ajouter l'écouteur serverInfo pour chaque socket
-        gameManager.on('serverInfo', (info) => {
-            socket.emit('serverInfo', info);
-        });
-
-        socket.on('disconnect', () => {
+       socket.on('disconnect', () => {
+            // Clean all listeners
+            listeners.forEach((listener, eventName) => {
+                gameManager.off(eventName, listener);
+            });
+            listeners.clear();
+            
             log.info(`Client disconnected: ${socket.id}`);
         });
 
@@ -41,18 +57,12 @@ export const setupSocketServer = (httpServer: HttpServer, gameManager: GameManag
             console.error("Socket error:", err);
         });
 
-        // Gestionnaire "fourre-tout" pour capturer tous les événements non gérés
+        // Debug log for all events
         socket.onAny((event, ...args) => {
             log.debug(`Unhandled event received: ${event}`, args);
         });
 
     });
-
-    /*
-    gameManager.on('serverInfo', (info) => {
-        io.emit('serverInfo', info); // Émettre à tous les clients connectés
-    });
-    */
 
     return io;
 };

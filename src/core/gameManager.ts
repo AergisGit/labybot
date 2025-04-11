@@ -22,6 +22,7 @@ export class GameManager extends EventEmitter {
 
     constructor() {
         super(); // init the EventEmitter part
+        this.setMaxListeners(50); // Augment the limit of listeners to 50
         this.games = new Map();
         this.botInstances = new Map();
         this.isRunning = new Map();
@@ -51,8 +52,9 @@ export class GameManager extends EventEmitter {
             this.isRunning.set(botId, true);
             this.log.info(`Bot ${botId} started successfully.`);
 
-            await this.startGame(0, this.config);
-            
+            await this.startGame(botId, this.config);
+            this.sendBotInfosChange(botId);
+
             // remonter le on server info
             //const conn = botInstance.getConnector();
             //conn.on('serverInfo', (info) => {
@@ -71,6 +73,10 @@ export class GameManager extends EventEmitter {
         this.emit('serverInfo', info);
     }
 
+    sendBotInfosChange(botInfos: any) {
+        this.emit('botInfos', this.getBotStatus(botInfos));
+    }
+
     async stopBot(botId: number = 0) {
         if (!this.isRunning.get(botId)) return;
 
@@ -78,6 +84,7 @@ export class GameManager extends EventEmitter {
         await botInstance.stopBot();
         this.botInstances.delete(botId);
         this.isRunning.set(botId, false);
+        this.sendBotInfosChange(botId);
 
         this.log.info(`Bot ${botId} stopped.`);
     }
@@ -248,6 +255,9 @@ export class GameManager extends EventEmitter {
             }
 
             this.games.set(botId, { instance: gameInstance, isRunning: true, config: gameConfig });
+            
+            this.sendBotInfosChange(botId);
+
             this.log.info(`Game ${gameConfig.game} started on bot ${botId}.`);
             return true;
 
@@ -270,6 +280,9 @@ export class GameManager extends EventEmitter {
         if (typeof instance.stop === "function") {
             instance.stop();
             this.games.set(botId, { instance: instance, isRunning: false, config: config });
+            
+            this.sendBotInfosChange(botId);
+            
             this.log.info(`Game ${config.gameName} stopped on bot ${botId}.`);
             return true;
         } else {

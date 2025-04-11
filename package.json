@@ -7,7 +7,9 @@
         "build": "npm run bundle",
         "types": "tsc",
         "bundle": "esbuild src/main.ts --bundle --platform=node --outfile=out/bundle.js --sourcemap",
-        "start": "tsx src/main.ts"
+        "start": "tsx src/main.ts",
+        "docker:build": "docker build -t labybot:latest .",
+        "docker:push": "docker push ghcr.io/AergisGit/labybot:latest"
     },
     "dependencies": {
         "bc-stubs": "^111.0.0",

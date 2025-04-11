@@ -7,12 +7,12 @@ export const registerGameEvents = (socket: Socket, gameManager: GameManager) => 
         socket.emit('gameConfig', data);
     });
 
-    socket.on('startGame', async (botId: number) => {
+    socket.on('startGame', async ({ botId }: { botId: number }) => {
         await gameManager.startGame(botId);
         socket.emit('gameStarted', { botId });
     });
 
-    socket.on('stopGame', async (botId: number) => {
+    socket.on('stopGame', async ({ botId }: { botId: number }) => {
         await gameManager.stopGame(botId);
         socket.emit('gameStopped', { botId });
     });

@@ -1,5 +1,6 @@
 import { Socket } from 'socket.io';
 import { GameManager } from '../../core/gameManager';
+import { logger } from '../../api';
 
 export const registerBotEvents = (socket: Socket, gameManager: GameManager) => {
     socket.on('getBotInfos', () => {
@@ -8,12 +9,12 @@ export const registerBotEvents = (socket: Socket, gameManager: GameManager) => {
     });
 
     socket.on('startBot', async ({ botId }: { botId: number }) => {
-        console.log(`Received startBot event for botId: ${botId}`);
+        logger.log(`Received startBot event for botId: ${botId}`);
         try {
             await gameManager.startBot(botId);
             socket.emit('botStarted', { botId });
         } catch (error) {
-            console.error(`Error starting bot ${botId}:`, error);
+            logger.error(`Error starting bot ${botId}:`, error);
             socket.emit('error', { message: `Failed to start bot ${botId}` });
         }
     });

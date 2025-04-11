@@ -183,7 +183,7 @@ export class TriggerManager {
         case "Coord":
           // Supprimer les triggers de type Coord
           const coord: CoordObject = { X: trigger.x1, Y: trigger.y1 };
-          this.conn.chatRoom.map.removeTileTrigger(trigger.x1, trigger.y1, trigger.callback);
+          this.conn.chatRoom?.map.removeTileTrigger(trigger.x1, trigger.y1, trigger.callback);
           break;
 
         case "Zone":
@@ -192,7 +192,7 @@ export class TriggerManager {
             TopLeft: { X: trigger.x1, Y: trigger.y1 },
             BottomRight: { X: trigger.x2, Y: trigger.y2 },
           };
-          this.conn.chatRoom.map.removeEnterRegionTrigger(trigger.callback);
+          this.conn.chatRoom?.map.removeEnterRegionTrigger(trigger.callback);
           break;
 
         case "ZoneOut":
@@ -201,7 +201,7 @@ export class TriggerManager {
             TopLeft: { X: trigger.x1, Y: trigger.y1 },
             BottomRight: { X: trigger.x2, Y: trigger.y2 },
           };
-          this.conn.chatRoom.map.removeLeaveRegionTrigger(trigger.callback);
+          this.conn.chatRoom?.map.removeLeaveRegionTrigger(trigger.callback);
           break;
 
         default:

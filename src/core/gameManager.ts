@@ -36,6 +36,7 @@ export class GameManager extends EventEmitter {
 
         await this.startBot(0); // par défaut un seul bot
         await this.startGame(0, this.config);
+
     }
 
     // Basic bots commands
@@ -50,11 +51,13 @@ export class GameManager extends EventEmitter {
             this.isRunning.set(botId, true);
             this.log.info(`Bot ${botId} started successfully.`);
 
-            // remonter le on server inf
-            const conn = botInstance.getConnector();
-            conn.on('serverInfo', (info) => {
-                this.onServerInfo(info);
-            });
+            await this.startGame(0, this.config);
+            
+            // remonter le on server info
+            //const conn = botInstance.getConnector();
+            //conn.on('serverInfo', (info) => {
+            //    this.onServerInfo(info);
+            //});
 
             return true;
         } catch (error) {
@@ -64,8 +67,8 @@ export class GameManager extends EventEmitter {
     }
 
     onServerInfo(info: any) {
-        this.log.debug("Received server info in GameManager:", info);
-        this.emit('botInfos', info);
+        //this.log.debug("Received server info in GameManager:", info);
+        this.emit('serverInfo', info);
     }
 
     async stopBot(botId: number = 0) {
@@ -82,6 +85,8 @@ export class GameManager extends EventEmitter {
     async restartBot(botId: number = 0) {
         await this.stopBot(botId);
         await this.startBot(botId);
+        //const config = this.games.get(botId).config;
+        //await this.startGame(0, this.config);
     }
 
     // TODO split this in two
@@ -90,7 +95,7 @@ export class GameManager extends EventEmitter {
     getBotStatus(botId: number = 0) {
         const botInstance = this.botInstances.get(botId);
         const gameStatus = this.getGameStatus(botId);
-        const roomInfos = botInstance.getRoomInfos();
+        const roomInfos = botInstance?.getRoomInfos();
         const isRunning = this.isRunning.get(botId) || false;
 
         return {
@@ -276,8 +281,8 @@ export class GameManager extends EventEmitter {
 
     async restartGame(botId: number = 0) {
         const game = this.games.get(botId);
-        await this.startGame(botId, game.config);
         await this.stopGame(botId);
+        await this.startGame(botId, game.config);
     }
 
 }

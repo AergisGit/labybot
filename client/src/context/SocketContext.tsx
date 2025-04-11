@@ -24,6 +24,10 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
                 setData((prev: any) => ({ ...prev, botData: payload }));
             });
 
+            socket.on("serverInfo", (payload) => {
+                setData((prev: any) => ({ ...prev, serverInfo: payload }));
+            });
+
             socket.on("connect", () => {
                 setIsConnected(true);
                 console.log("WebSocket connected");
@@ -53,6 +57,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
             socket?.off('connect_error');
             socket?.off('connect_timeout');
             socket?.off('botInfos');
+            socket?.off('serverInfo');
             socket?.off('gameConf');
             socket?.off('botData');
         };

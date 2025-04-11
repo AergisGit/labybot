@@ -1,38 +1,61 @@
-.App {
-  text-align: center;
+/* Général */
+body {
+  margin: 0;
+  font-family: sans-serif;
+  background-color: #f9f9f9;
+  color: #333;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+/* Conteneur de page complet */
+.page {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
+  min-height: 100vh;
+}
+
+/* Header & footer */
+.header,
+.footer {
+  background-color: #333;
   color: white;
+  padding: 1rem;
 }
 
-.App-link {
-  color: #61dafb;
+.ascii-logo {
+  font-size: 6px;
+  line-height: 6px;
+  margin: 0;
+  white-space: pre;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
+/* Contenu principal */
+.container {
+  padding: 1rem 2rem; /* padding haut/bas + à gauche/droite */
+  max-width: 100%;     /* Pas de centrage */
+}
+
+/* Cadre général */
+.card {
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 0.5rem 1rem; /* Réduit le padding global */
+  margin-bottom: 1.5rem;
+  max-width: 100%;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+.card h1 {
+  margin-top: 0.2rem;
+  margin-bottom: 0.5rem;
+}
+.card h2 {
+  margin-top: 0.2rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Responsive tweaks si besoin */
+@media (max-width: 600px) {
+  .container {
+    padding: 1rem;
   }
 }

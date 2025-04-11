@@ -11,11 +11,22 @@ const App: React.FC = () => {
     const [map, setMap] = useState("Chargement...");
     const [gameStatus, setGameStatus] = useState("Chargement...");
     const [botData, setBotData] = useState("No data yet.");
-    const [debug, setdebug] = useState("");
+    const [serverInfo, setServerInfo] = useState("");
 
     // Vérifier si le WebSocket est connecté ou si les données sont disponibles
     const hasSocket = socket?.connected;
     const hasData = data && Object.keys(data).length > 0;
+
+    const asciiLogo = `
+ ▄█        ▄████████ ▀█████████▄  ▄██   ▄       ▀█████████▄   ▄██████▄      ███    
+███       ███    ███   ███    ███ ███   ██▄       ███    ███ ███    ███ ▀█████████▄
+███       ███    ███   ███    ███ ███▄▄▄███       ███    ███ ███    ███    ▀███▀▀██
+███       ███    ███  ▄███▄▄▄██▀  ▀▀▀▀▀▀███      ▄███▄▄▄██▀  ███    ███     ███   ▀
+███     ▀███████████ ▀▀███▀▀▀██▄  ▄██   ███     ▀▀███▀▀▀██▄  ███    ███     ███    
+███       ███    ███   ███    ██▄ ███   ███       ███    ██▄ ███    ███     ███    
+███▌    ▄ ███    ███   ███    ███ ███   ███       ███    ███ ███    ███     ███    
+█████▄▄██ ███    █▀  ▄█████████▀   ▀█████▀      ▄█████████▀   ▀██████▀     ▄████▀  
+▀                                                                                  `;
 
     // debug
     console.log("hasSocket:", hasSocket);
@@ -54,7 +65,9 @@ const App: React.FC = () => {
             setCharacters(
                 `Personnages dans la salle (${data.botInfos.playerCount}/${data.botInfos.roomData.Limit}) :\n${charactersString.join("\n")}`,
             );
-
+        }
+        if (data?.serverInfo) {
+            setServerInfo(`${JSON.stringify(data?.serverInfo)}`);
         }
     }, [data]);
 
@@ -108,26 +121,39 @@ const App: React.FC = () => {
     }
 
     return (
-        <div>
-            <p id="debug">{debug}</p>
-            <h1>Laby Bot</h1>
-            <p id="botStatus">{botStatus}</p>
-            <button onClick={startBot}>Démarrer</button>
-            <button onClick={stopBot}>Arrêter</button>
-            <button onClick={restartBot}>Redémarrer</button>
-            <p id="botRoomInfos">{botRoomInfos}</p>
-            <p id="characters">{characters}</p>
-            <p id="map">{map}</p>
+        <div className="page">
+            <header className="header">
+                <pre className="ascii-logo">{asciiLogo}</pre>
+            </header>
+            <main className="container">
+                <section className="card">
+                    <p id="serverInfo">{serverInfo}</p>
+                    <h2>Bot</h2>
+                    <p id="botStatus">{botStatus}</p>
+                    <button onClick={startBot}>Démarrer</button>
+                    <button onClick={stopBot}>Arrêter</button>
+                    <button onClick={restartBot}>Redémarrer</button>
+                    <p id="botRoomInfos">{botRoomInfos}</p>
+                    <p id="characters">{characters}</p>
+                    <p id="map">{map}</p>
+                </section>
+                <section className="card">
+                    <h2>Game</h2>
+                    <p id="gameStatus">{gameStatus}</p>
+                    <button onClick={startGame}>Démarrer</button>
+                    <button onClick={stopGame}>Arrêter</button>
+                    <button onClick={restartGame}>Redémarrer</button>
+                </section>
 
-            <h2>Game</h2>
-            <p id="gameStatus">{gameStatus}</p>
-            <button onClick={startGame}>Démarrer</button>
-            <button onClick={stopGame}>Arrêter</button>
-            <button onClick={restartGame}>Redémarrer</button>
-
-            <h1>Bot Data</h1>
-            <h2>Bot room data</h2>
-            <pre id="botData">{botData}</pre>
+                <section className="card">
+                    <h1>Bot Data</h1>
+                    <h2>Bot room data</h2>
+                    <pre id="botData">{botData}</pre>
+                </section>
+            </main>
+            <footer className="footer">
+                <p>© 2025 Moi-même</p>
+            </footer>
         </div>
     );
 };

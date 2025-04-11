@@ -18,10 +18,7 @@ export const setupSocketServer = (httpServer: HttpServer, gameManager: GameManag
 
     io.on('connection', (socket) => {
         log.info(`Client connected: ${socket.id}`);
-        log.debug('New connection attempt', {
-            id: socket.id,
-            handshake: socket.handshake
-        });
+        //log.debug('New connection attempt', {id: socket.id,handshake: socket.handshake});
 
         // Init des données à la connexion :
         // Émettre des données après la connexion

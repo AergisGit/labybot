@@ -150,20 +150,20 @@ export class API_AppearanceItem {
         lockType: AssetLockType,
         lockedBy: number,
         opts: Record<string, any>,
+        replace: boolean = false // replace the current lock (if any) with this one
     ): void {
         // Check if the object allows a lock
         const assetDef = this.getAssetDef();
         let canLock = assetDef.AllowLock ?? false;
  
-        // Checks if the object option allows a lock
         if (!canLock) {
-            //logger.log("Lock - Data Property type record:", this.data?.Property?.TypeRecord);
-            let typedValue = this.data?.Property?.TypeRecord?.typed;
-
+            // Checks if the object option allows a lock
             // Get the current option
             if(this.Extended) {
+                //logger.debug("Lock - Data Property type record:", this.data?.Property?.TypeRecord);
+                let typedValue = this.data?.Property?.TypeRecord?.typed;
                 const currentOption = this.Extended.getExtendedOption(typedValue);
-                logger.log("Lock - Extended Def: ", currentOption);
+                //logger.debug("Lock - Extended Def: ", currentOption);
 
                 // If there is a currentOption and it allows a lock
                 if (currentOption?.AllowLock) {
@@ -171,6 +171,13 @@ export class API_AppearanceItem {
                 }
             }
         }
+        
+        // check if this object already has a lock
+        //
+        logger.debug("Lock - this.data.Property.LockedBy:", this.data.Property.LockedBy);
+        
+
+
         // Exit if neither the object nor its option allows a lock
         if (!canLock) return;
 
@@ -253,7 +260,7 @@ export class ExtendedItem {
                 ),
             );
         }
-        //logger.log(`Made extended item for ${item.Group} / ${item.Name}, Extended def is ${this.extendedDef}`);
+        //logger.debug(`Made extended item for ${item.Group} / ${item.Name}, Extended def is ${this.extendedDef}`);
             }
 
     public get Type() {
@@ -268,7 +275,7 @@ export class ExtendedItem {
         }
     
         const options = this.extendedDef.Options;
-        //logger.log("CurOpt - Extended Def:", JSON.stringify(options, null, 2));
+        //logger.debug("CurOpt - Extended Def:", JSON.stringify(options, null, 2));
 
         // retorn option if found
         return options?.[typed];
@@ -285,7 +292,7 @@ export class ExtendedItem {
     }
 
     public SetType(t: string): void {
-        //logger.log(`Setting type for asset ${this.item.Group} / ${this.item.Name} with extended def ${JSON.stringify(this.extendedDef)} to ${t}`);
+        //logger.debug(`Setting type for asset ${this.item.Group} / ${this.item.Name} with extended def ${JSON.stringify(this.extendedDef)} to ${t}`);
         if (this.extendedDef.Archetype !== "typed") {
             throw new Error(
                 `Tried to set type of non-typed asset ${this.item.Name}`,

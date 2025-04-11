@@ -74,7 +74,7 @@ export class Logger extends Console {
         const resetColor = '\x1b[0m'; // Réinitialiser la couleur
         const color = levelColors[level] || resetColor;
     
-        const formattedMessage = `${color}${level.padEnd(5)}${resetColor} ${timestamp} ${this.contextColor}${this.context}${resetColor} - ${message}`;
+        const formattedMessage = `${color}${level.padEnd(5)}${resetColor} ${timestamp} ${this.contextColor}${this.context}${resetColor} ${message}`;
 
         // Formater les objets passés dans args pour les avoir sur une seule ligne
         const formattedArgs = args.map(arg => {

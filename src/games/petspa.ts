@@ -70,7 +70,7 @@ export const PET_EARS: BC_AppearanceItem = {
 };
 
 export class PetSpa {
-    public static description = [
+    private description = [
         "This is an example to show how to use the ropeybot API to create a simple game.",
         "Commands:",
         "",
@@ -86,7 +86,10 @@ export class PetSpa {
     private commandParser: CommandParser;
 
     public constructor(private conn: API_Connector) {
+        this.conn.setBotDescription(this.description);
+        
         this.commandParser = new CommandParser(this.conn);
+
 
         this.conn.on("RoomCreate", this.onChatRoomCreated);
         this.conn.on("RoomJoin", this.onChatRoomJoined);

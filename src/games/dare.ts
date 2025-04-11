@@ -20,7 +20,7 @@ import { API_Character } from "../apiCharacter";
 import { BC_Server_ChatRoomMessage } from "../logicEvent";
 
 export class Dare {
-    public static description = `Dares
+    private description = `Dares
  =====
 
 Collects dare / forfeit cards privately & anonymously that can then be drawn.
@@ -59,6 +59,10 @@ Rules
         this.commandParser.register("pick", this.onPick);
         this.commandParser.register("dare", this.onDare);
         this.loadDares();
+
+        this.conn.accountUpdate({ Nickname: "Dare Bot" });
+        this.conn.setBotDescription(this.description);
+        
     }
 
     private async loadDares(): Promise<void> {

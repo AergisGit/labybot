@@ -6,6 +6,9 @@
   "compilerOptions": {
       "lib": ["es2023", "DOM"],
       "target": "es2022",
+      "paths": {
+        "@shared/*": ["./shared/*"]
+      },
       "allowJs": true,
       "noEmit": true,
       "strict": false,
@@ -19,7 +22,8 @@
       "node_modules/bc-stubs/bc/NativeDeclarations/Typedef.d.ts",
       "node_modules/bc-stubs/bc/NativeDeclarations/Messages.d.ts",
       "node_modules/bc-stubs/bc/NativeDeclarations/Female3DCG_Types.d.ts",
-      "src/**/*"
+      "src/**/*",
+      "shared/**/*"
   ],
   "ts-node": {
     "files": true

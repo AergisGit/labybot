@@ -146,6 +146,8 @@ export class MaidsPartyNightSinglePlayerAdventure extends LoggingLogic {
 		super();
 		this.conn = conn;
 		this.conn2 = conn2;
+		
+		this.conn.startBot(this);
 	}
 
 	/**

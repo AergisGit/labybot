@@ -111,12 +111,17 @@ export const PET_EARS: BC_AppearanceItem = {
 export class Home {
 
     // variable contenant la description du bot pour sa bio
-    public static description = [
-        "This is an example to show how to use the ropeybot API to create a simple game.",
-        "Commands:",
+    private description = [
+        "Welcome to Sophie's home!",
         "",
-        "/bot free - Immediately removes any restraints added",
-        "Code at https://github.com/FriendsOfBC/ropeybot",
+        "Make yourself at home gentle guest. People might speak french arround here, please don't mind them",
+        "And please beware the automated traps here and there.",
+        "",
+        "Command:",
+        "/bot free - [Admins only] Immediately removes any restraints added.",
+        "",
+        "This bot runs on a version of Ropeybot customized by Sophie (186990).",
+        "Ropeybot code at https://github.com/FriendsOfBC/ropeybot",
     ].join("\n");
 
     // Variables du bot pour retenir ce qui se passe dans sa salle, relative à ce qu'on veut qu'il puisse faire
@@ -140,6 +145,8 @@ export class Home {
         this.commandParser.register("reset", this.onCommandReset);
         this.commandParser.register("debug", this.onCommandDebug);
 
+        // Mise à jour de la description du bot
+        this.conn.setBotDescription(this.description);
 
         // Déclancheur sur reception d'un message peut importe son contenu
         conn.on("Message", this.onMessage);
@@ -756,9 +763,9 @@ export class Home {
         msg: BC_Server_ChatRoomMessage,
         args: string[],
     ) => {
-        this.freeCharacter(sender);
-        //await wait(500);
-        //sender.Kick();
+        if(this.superusers.includes(sender.MemberNumber) || this.conn.chatRoom.Admin.includes(sender.MemberNumber)){ 
+            this.freeCharacter(sender);
+        }
     };
 
     // commandes pour super user seulement

@@ -291,7 +291,7 @@ export class AppearanceType {
     public updateItemData(item: BC_AppearanceItem): void {
         const idx = this.data.findIndex((i) => i.Group === item.Group);
         if (idx === -1) {
-            logger.error("Couldn't find item to update in slot", item.Group);
+            logger.warn("Couldn't find item to update in slot", item.Group);
             return;
         }
 

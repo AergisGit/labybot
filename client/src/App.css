@@ -1,0 +1,141 @@
+@import './styles/variables.css';
+@import './styles/layout.css';
+
+
+/* Général */
+body {
+  margin: 0;
+  font-family: sans-serif;
+  background-color: #f9f9f9;
+  color: #333;
+}
+
+/* Conteneur de page complet */
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Header & footer */
+.header,
+.footer {
+  background-color: #333;
+  color: white;
+  padding: 1rem;
+}
+
+.ascii-logo {
+  font-size: 6px;
+  line-height: 6px;
+  margin: 0;
+  white-space: pre;
+}
+
+
+.card h1 {
+  margin-top: 0.2rem;
+  margin-bottom: 0.5rem;
+}
+.card h2 {
+  margin-top: 0.2rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Titre (premier élément) */
+.header-row h2 {
+  margin: 0;
+  white-space: nowrap;
+}
+
+/* Éléments du milieu (peuvent être multiples) */
+.header-row .header-content {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  display: flex;
+  gap: 10px;
+  flex-wrap: nowrap;
+  width: 100%;
+}
+
+.header-row .header-content p {
+  flex: 1;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Dernier élément (optionnel) */
+.header-row .header-end {
+  white-space: nowrap;
+  text-align: right;
+}
+
+.header-row .header-end p {
+  margin: 0;
+}
+
+/* Styles pour les paragraphes d'information */
+
+#botStatus,
+#botRoomInfos,
+#characters,
+#serverInfo,
+#gameStatus {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    max-width: 100%;
+    overflow-x: hidden;
+    font-family: monospace;
+    background-color: #f5f5f5;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin: 10px 0;
+}
+
+.map-container {
+  max-width: 100%;
+  margin: 10px 0;
+}
+
+.map-textarea {
+  width: 95%;
+  min-height: 100px;
+  max-height: 300px;
+  font-family: monospace;
+  background-color: #ececec;
+  color: #000000;
+  border: 1px solid #404040;
+  padding: 10px;
+  resize: vertical;
+  white-space: pre-wrap; 
+  overflow-x: auto;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+.json-viewer {
+  max-height: 500px;
+  overflow-y: auto;
+  background-color: #1e1e1e;
+  border: 1px solid #404040;
+  border-radius: 4px;
+  padding: 10px;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.json-viewer > div {
+  word-wrap: break-word;
+  white-space: pre-wrap !important;
+}
+
+/* Responsive tweaks si besoin */
+@media (max-width: 600px) {
+  .container {
+    padding: 1rem;
+  }
+}

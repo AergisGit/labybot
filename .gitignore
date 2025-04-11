@@ -1,8 +1,9 @@
 node_modules
-package-lock.json
-config.json
-config2.json
-commandes.txt
 out
-src/games/laby/data
-
+package-lock.json
+config/config.json
+config/config_*.json
+resources/games/laby/yumi*
+resources/test.json
+local/
+.vscode

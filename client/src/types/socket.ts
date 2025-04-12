@@ -6,7 +6,7 @@ export interface SocketData {
     botInfos?: BotInfos;
     gameConf?: GameConf;
     botData?: any;
-    serverInfo?: string;
+    serverInfo?: any;
 }
 
 export interface SocketContextType {

@@ -10,3 +10,4 @@ export interface BotInfos {
     roomMap?: string;
     roomData?: API_Chatroom_Data;
 }
+

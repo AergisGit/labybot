@@ -14,7 +14,7 @@ import { Casino } from "../games/casino";
 import { EventEmitter } from 'stream';
 
 export class GameManager extends EventEmitter {
-    private games: Map<number, { instance: any, isRunning: boolean, config: ConfigFile }>; // Gère les jeux actifs et leurs bots
+    private gameInstances: Map<number, { instance: any, isRunning: boolean, config: ConfigFile }>; // Gère les jeux actifs et leurs bots
     private botInstances: Map<number, BotManager>; // Gère plusieurs bots via un ID
     private isRunning: Map<number, boolean>; // Suivi de l'état de chaque bot
     private config: ConfigFile;
@@ -23,7 +23,7 @@ export class GameManager extends EventEmitter {
     constructor() {
         super(); // init the EventEmitter part
         this.setMaxListeners(50); // Augment the limit of listeners to 50
-        this.games = new Map();
+        this.gameInstances = new Map();
         this.botInstances = new Map();
         this.isRunning = new Map();
         this.log = new Logger('GAME', 'debug', true, 'yellow');
@@ -41,17 +41,97 @@ export class GameManager extends EventEmitter {
     }
 
     // Emitters
-    sendServerInfo(info: any) {
+    private sendServerInfo(info: any) {
         this.emit('serverInfo', info);
     }
 
-    sendBotInfos(botInfos: any) {
-        this.emit('botInfos', this.getBotInfos(botInfos));
+    private sendBotInfos(botId: number = 0) {
+        this.emit('botInfos', this.getBotInfos(botId));
+    }
+
+    // Notes : 
+    // - By making a GameInstance class to be extended for each game,
+    //   We simply might send the events from there to the game
+    //    when the corresponding functions are implemented.
+    // - To be cleaned : Except for serverInfos, on every update,
+    //    the whole botInfos is sent to the client
+    //
+    // Listeners
+    private setupBotListeners(botId: number): void {
+        const botInstance = this.botInstances.get(botId);
+        if (botInstance) {
+            const connector = botInstance.getConnector();
+            // Connection related events
+            //connector.on('connect', () => { this.sendBotInfos(botId); });
+            //connector.on('disconnect', () => { this.sendBotInfos(botId); });
+
+            // Get the connector and listen for serverInfo events
+            connector.on('serverInfo', (info) => {this.sendServerInfo(info);});
+
+            // Room related events
+            connector.on('RoomJoin', () => { this.sendBotInfos(botId); });
+            connector.on('RoomCreate', () => { this.sendBotInfos(botId); });
+
+            // Chat part
+            // Plus d'infos de base pour le message reçu du serveur avant d'être émit pa le connector : BC_Server_ChatRoomMessage
+            //connector.on('Message', (sender, message) => { });
+            //connector.on('Beep', (payload: TBeepType) => { });
+            
+            // Character updates
+            connector.on('CharacterEntered', (char) => { this.sendBotInfos(botId); });
+            connector.on('CharacterLeft', (sourceMemberNumber, character, leaveMessage, intentional) => { this.sendBotInfos(botId); });
+            connector.on('PoseChange', (character) => { this.sendBotInfos(botId); });
+            
+            // Some on : connector.wrappedSock.emit() (private)
+            // That seems to come from the bot's own actions.
+            // The botInfos should also be sent when the bot acts.
+            // - ChatRoomChat
+            // - ChatRoomAdmin
+            // - AccountBeep
+            // - AccountQuery
+            // - AccountLogin
+            // - AccountUpdate
+            // - ChatRoomJoin
+            // - ChatRoomCreate
+            // - ChatRoomLeave
+            // - ChatRoomSearch
+            // - ChatRoomCharacterItemUpdate
+            // - ChatRoomCharacterUpdate
+            // - ChatRoomCharacterPoseUpdate
+            // - ChatRoomAllowItem
+            // - ChatRoomCharacterMapDataUpdate
+
+            if (connector.chatRoom) {
+                // apperance updates
+                connector.chatRoom.on('ItemAdd', (source, item) => { this.sendBotInfos(botId); });
+                connector.chatRoom.on('ItemRemove', (source, items) => { this.sendBotInfos(botId); });
+                connector.chatRoom.on('ItemChange', (source, newItem, oldItem) => { this.sendBotInfos(botId); });
+
+                // Map updates
+                if (connector.chatRoom.map) {
+                    connector.chatRoom.map.on('MapUpdate', () => { this.sendBotInfos(botId); });
+                }
+            }
+        }
+    }
+
+    private stopBotListeners(botId: number): void {
+        // Cleanup listeners when stopping
+        const botInstance = this.botInstances.get(botId);
+        if (botInstance) {
+            const connector = botInstance.getConnector();
+            connector.removeAllListeners();
+            if (connector.chatRoom) {
+                connector.chatRoom.removeAllListeners();
+                if (connector.chatRoom.map) {
+                    connector.chatRoom.map.removeAllListeners();
+                }
+            }
+        }
     }
 
 
     // Basic bots commands
-
     public async startBot(botId: number = 0): Promise<boolean> {
         if (this.isRunning.get(botId)) return;
 
@@ -63,12 +143,7 @@ export class GameManager extends EventEmitter {
             this.log.info(`Bot ${botId} started successfully.`);
 
             await this.startGame(botId, this.config);
-
-            // Get the connector and listen for serverInfo events
-            const conn = botInstance.getConnector();
-            conn.on('serverInfo', (info) => {
-                this.sendServerInfo(info);
-            });
+            this.setupBotListeners(botId); // Setup listeners for the bot instance
 
             return true;
         } catch (error) {
@@ -78,29 +153,27 @@ export class GameManager extends EventEmitter {
     }
 
 
-    async stopBot(botId: number = 0) {
+    public async stopBot(botId: number = 0) {
         if (!this.isRunning.get(botId)) return;
 
+        this.stopGame(botId); // stop the game if any
+        this.stopBotListeners(botId) // cleanup listeners before stopping the bot
+
+        // stop the bot and do some cleanup
         const botInstance = this.botInstances.get(botId);
         await botInstance.stopBot();
         this.botInstances.delete(botId);
+
+        // update the infos now that the bot is stopped
         this.isRunning.set(botId, false);
         this.sendBotInfos(botId);
 
         this.log.info(`Bot ${botId} stopped.`);
     }
 
-    async restartBot(botId: number = 0) {
-        await this.stopBot(botId);
-        await this.startBot(botId);
-        //const config = this.games.get(botId).config;
-        //await this.startGame(0, this.config);
-    }
 
-    // TODO split this in two
-    //  the first one for status
-    //  the second to return a BotInfos structure
-    getBotInfos(botId: number = 0): BotInfos | undefined {
+    // send most of the bot infos to the client
+    public getBotInfos(botId: number = 0): BotInfos | undefined {
         const botInstance = this.botInstances.get(botId);
         let botInfos: BotInfos = undefined;
 
@@ -126,7 +199,7 @@ export class GameManager extends EventEmitter {
     }
 
     public getGameStatus(botId: number = 0) {
-        const gameInfos = this.games.get(botId);
+        const gameInfos = this.gameInstances.get(botId);
         return {
             game: gameInfos?.config?.game,
             gameName: gameInfos?.config?.gameName,
@@ -134,7 +207,7 @@ export class GameManager extends EventEmitter {
         };
     }
 
-    getRoomInfos(botId: number = 0) {
+    public getRoomInfos(botId: number = 0) {
         const botInstance = this.botInstances.get(botId);
         if (botInstance !== undefined) {
             return botInstance.getRoomInfos();
@@ -142,8 +215,8 @@ export class GameManager extends EventEmitter {
     }
 
     // Config
-    getBotConfig(botId: number = 0) {
-        const config = this.games.get(botId)?.config;
+    public getBotConfig(botId: number = 0) {
+        const config = this.gameInstances.get(botId)?.config;
         return {
             user: config?.user,
             env: config?.env,
@@ -151,8 +224,8 @@ export class GameManager extends EventEmitter {
         };
     }
 
-    getGameConfig(botId: number = 0) {
-        const config = this.games.get(botId)?.config;
+    public getGameConfig(botId: number = 0) {
+        const config = this.gameInstances.get(botId)?.config;
         return {
             game: config?.game,
             gameName: config?.gameName,
@@ -161,19 +234,17 @@ export class GameManager extends EventEmitter {
         };
     }
 
-    updateGameConfig(newConfig: Partial<ConfigFile>, botId: number = 0) {
-        // The logic will be kept in the botManager, not in the front end
-
+    public updateGameConfig(newConfig: Partial<ConfigFile>, botId: number = 0) {
         this.config = { ...this.config, ...newConfig };
         this.log.info(`Updated config for bot ${botId}:`, this.getConfig());
     }
 
     private getConfig(botId: number = 0): ConfigFile {
-        // TODO separate game from bot config at some point,
+        // TODO separate game config from bot config at some point,
         // We'll keep only parts of this newConfig we think should be updated.
         //  and have the bot being able to change game live
 
-        // Hide passwords before giving the config
+        // Hide passwords before retunring the config
         const configCleaned: ConfigFile = { ...this.config };
         configCleaned.password = configCleaned.password ? "***" : configCleaned.password;
         configCleaned.password2 = configCleaned.password2 ? "***" : configCleaned.password2;
@@ -192,8 +263,8 @@ export class GameManager extends EventEmitter {
                 throw new Error(`Bot ${botId} is not connected.`);
             }
 
-            if (this.games.has(botId)) {
-                const gameInfos = this.games.get(botId)
+            if (this.gameInstances.has(botId)) {
+                const gameInfos = this.gameInstances.get(botId)
                 if (gameInfos.isRunning) {
                     this.log.warn(`A game is already running on bot ${botId}. Stopping it first.`);
                     await this.stopGame(botId);
@@ -261,7 +332,7 @@ export class GameManager extends EventEmitter {
                     throw new Error(`Unknown game : ${gameConfig.game}`);
             }
 
-            this.games.set(botId, { instance: gameInstance, isRunning: true, config: gameConfig });
+            this.gameInstances.set(botId, { instance: gameInstance, isRunning: true, config: gameConfig });
 
             this.sendBotInfos(botId);
 
@@ -276,7 +347,7 @@ export class GameManager extends EventEmitter {
 
 
     public async stopGame(botId: number = 0): Promise<boolean> {
-        const gameInfos = this.games.get(botId);
+        const gameInfos = this.gameInstances.get(botId);
         if (!gameInfos) {
             this.log.warn(`No game is running on bot ${botId}.`);
             return true;
@@ -286,7 +357,7 @@ export class GameManager extends EventEmitter {
         const { config } = gameInfos
         if (typeof instance.stop === "function") {
             instance.stop();
-            this.games.set(botId, { instance: instance, isRunning: false, config: config });
+            this.gameInstances.set(botId, { instance: instance, isRunning: false, config: config });
 
             this.sendBotInfos(botId);
 
@@ -300,7 +371,7 @@ export class GameManager extends EventEmitter {
 
 
     async restartGame(botId: number = 0) {
-        const game = this.games.get(botId);
+        const game = this.gameInstances.get(botId);
         await this.stopGame(botId);
         await this.startGame(botId, game.config);
     }

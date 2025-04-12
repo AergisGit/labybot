@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
-import ReactJson from "@microlink/react-json-view";
 import TextareaAutosize from "react-textarea-autosize";
 import { useSocketContext } from "./context/SocketContext";
 //import ErrorPage from "./components/ErrorPage";
 import GameControlPanel from "./components/GameControlPanel";
 import BotControlPanel from "./components/BotControlPanel";
+import DataDashboard from "./components/DataDashboard";
+import ServerInfo from "./components/ServerInfo";
+import TabMenu, { Tab } from "./components/TabMenu";
 import "./App.css";
 
 const App: React.FC = () => {
@@ -12,8 +14,7 @@ const App: React.FC = () => {
     const [botRoomInfos, setBotRoomInfos] = useState("Chargement...");
     const [characters, setCharacters] = useState("Chargement...");
     const [map, setMap] = useState("Chargement...");
-    const [botData, setBotData] = useState<any>({}); // Typage explicite pour éviter les problèmes
-    const [serverInfo, setServerInfo] = useState("serverInfo : Chargement...");
+    const [activeTab, setActiveTab] = useState<Tab>("main");
 
     // Vérifier si le WebSocket est connecté ou si les données sont disponibles
     const hasSocket = socket?.connected;
@@ -41,20 +42,16 @@ const App: React.FC = () => {
     useEffect(() => {
         // Reset states if data is not available
         if (!data) {
-            setBotData({});
             setMap("Chargement...");
             setBotRoomInfos("Chargement...");
             setCharacters("Chargement...");
-            setServerInfo("serverInfo : Chargement...");
             return;
         }
 
         // Update states only if data is available
         if (data.botInfos) {
-            setBotData(data.botInfos);
             setMap(data.botInfos.roomMap || "Aucune carte disponible");
         } else {
-            setBotData({});
             setMap("Chargement...");
         }
 
@@ -78,13 +75,6 @@ const App: React.FC = () => {
             setCharacters("Chargement des personnages...");
         }
 
-        if (data.serverInfo) {
-            setServerInfo(JSON.stringify(data.serverInfo));
-        } else {
-            setServerInfo(
-                "serverInfo : En attente des informations du serveur...",
-            );
-        }
     }, [data]);
 
     /*
@@ -104,48 +94,46 @@ const App: React.FC = () => {
         );
     }*/
 
+    const renderMainContent = () => (
+        <>
+            <section className="card">
+                <div className="header-row">
+                    <div className="header-content">
+                        <BotControlPanel />
+                    </div>
+                    <div className="header-content">
+                        <GameControlPanel />
+                    </div>
+                </div>
+                <p id="botRoomInfos">{botRoomInfos}</p>
+                <p id="characters">{characters}</p>
+            </section>
+            <section className="card">
+                <p>Map :</p>
+                <div className="map-container">
+                    <TextareaAutosize
+                        value={map}
+                        readOnly
+                        className="map-textarea"
+                    />
+                </div>
+            </section>
+        </>
+    );
+
+    const renderDataContent = () => <DataDashboard />;
+
     return (
         <div className="page">
             <header className="header">
                 <pre className="ascii-logo">{asciiLogo}</pre>
+                <ServerInfo />
+                <TabMenu activeTab={activeTab} onTabChange={setActiveTab} />
             </header>
             <main className="container">
-                <section className="card">
-                    <div className="header-row">
-                        <div className="header-content">
-                            <BotControlPanel />
-                        </div>
-                        <div className="header-content">
-                            <GameControlPanel />
-                        </div>
-                    </div>
-                    <p id="serverInfo">{serverInfo}</p>
-                    <p id="botRoomInfos">{botRoomInfos}</p>
-                    <p id="characters">{characters}</p>
-                </section>
-                <section className="card">
-                    <p>Map :</p>
-                    <div className="map-container">
-                        <TextareaAutosize
-                            value={map}
-                            readOnly
-                            className="map-textarea"
-                        />
-                    </div>
-                </section>
-
-                <section className="card">
-                    <h1>Bot room data</h1>
-                    <div className="json-viewer">
-                        <ReactJson
-                            src={botData}
-                            theme="monokai"
-                            collapsed={1}
-                            displayDataTypes={false}
-                            enableClipboard={false}
-                        />
-                    </div>
-                </section>
+                {activeTab === "main"
+                    ? renderMainContent()
+                    : renderDataContent()}
             </main>
             <footer className="footer">
                 <p>© 2025 Moi-même</p>

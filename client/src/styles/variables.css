@@ -1,10 +1,29 @@
 :root {
-    /* Couleurs */
+    /* Couleurs principales */
     --color-primary: #333;
     --color-background: #f9f9f9;
     --color-text: #333;
     --color-border: #ddd;
     --color-shadow: rgba(0, 0, 0, 0.05);
+
+    /* Couleurs des bandeaux */
+    --color-header: #333;
+    --color-header-text: #fff;
+    
+    /* Couleurs des sections */
+    --color-section-background: #ececec;
+    --color-section-border: #ddd;
+    
+    /* Couleurs des éléments interactifs */
+    --color-interactive: #007bff;
+    --color-interactive-hover: #0056b3;
+
+    /* Couleurs spécifiques au dashboard */
+    --color-dashboard-background: var(--color-background);
+    --color-dashboard-status: var(--color-header);
+    --color-dashboard-status-text: var(--color-header-text);
+    --color-dashboard-section: var(--color-section-background);
+    --color-dashboard-border: var(--color-section-border);
 
     /* Espacements */
     --spacing-xs: 0.25rem;
@@ -18,4 +37,9 @@
 
     /* Shadows */
     --shadow-card: 0 2px 6px var(--color-shadow);
+
+    /* Couleurs pour les onglets */
+    --color-tab-active: var(--color-header);
+    --color-tab-inactive: #666;
+    --color-tab-hover: #444;
 }

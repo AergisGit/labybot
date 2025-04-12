@@ -302,7 +302,7 @@ export class API_Connector extends EventEmitter {
     }
 
     private onSocketConnect = async () => {
-        logger.log("Socket connected!");
+        logger.log("Socket connected! Now logging in...");
         this.wrappedSock.emit("AccountLogin", {
             AccountName: this.username,
             Password: this.password,

@@ -10,27 +10,66 @@ const SocketContext = createContext<SocketContextType>({
         botInfos: undefined,
         gameConf: undefined,
         botData: undefined,
-        serverInfo: undefined
+        serverInfo: undefined,
     },
     isConnected: false,
-    isLoading: true
+    isLoading: true,
 });
-
 
 export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
     children,
 }) => {
     const socket = useSocket("http://localhost:3000");
     const [isLoading, setIsLoading] = useState(true);
-    //const [data, setData] = useState<any>({});
+
+    // Ajout du debug initial
+    useEffect(() => {
+        const savedData = localStorage.getItem("socketData");
+        if (savedData) {
+            console.log("Initial localStorage content:", savedData);
+            try {
+                JSON.parse(savedData);
+            } catch (e) {
+                console.error("Invalid JSON in localStorage:", savedData);
+                console.trace("Stack trace for invalid localStorage data");
+            }
+        }
+    }, []);
+
+    // Création d'une fonction wrapper pour localStorage
+    /*const safeSetLocalStorage = (key: string, value: any) => {
+        try {
+            const stringified = JSON.stringify(value);
+            console.log(`Setting localStorage[${key}]:`, stringified);
+            console.trace("Stack trace for localStorage set");
+            localStorage.setItem(key, stringified);
+        } catch (e) {
+            console.error("Failed to set localStorage:", e);
+            console.error("Value that failed:", value);
+        }
+    };*/
+
     const [data, setData] = useState<SocketData>(() => {
-        const savedData = localStorage.getItem('socketData');
-        return savedData ? JSON.parse(savedData) : {
-            botInfos: undefined,
-            gameConf: undefined,
-            botData: undefined,
-            serverInfo: undefined
-        };
+        try {
+            const savedData = localStorage.getItem("socketData");
+            if (!savedData)
+                return {
+                    botInfos: undefined,
+                    gameConf: undefined,
+                    botData: undefined,
+                    serverInfo: undefined,
+                };
+            return JSON.parse(savedData);
+        } catch (error) {
+            console.error("Error reading from localStorage:", error);
+            localStorage.removeItem("socketData");
+            return {
+                botInfos: undefined,
+                gameConf: undefined,
+                botData: undefined,
+                serverInfo: undefined,
+            };
+        }
     });
     const [isConnected, setIsConnected] = useState(false);
 
@@ -44,7 +83,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
             socket.on("botInfos", (payload) => {
                 setData((prev) => {
                     const newData = { ...prev, botInfos: payload };
-                    localStorage.setItem('socketData', JSON.stringify(newData));
+                    localStorage.setItem("socketData", JSON.stringify(newData));
                     setIsLoading(false);
                     return newData;
                 });
@@ -53,7 +92,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
             socket.on("gameConf", (payload) => {
                 setData((prev) => {
                     const newData = { ...prev, gameConf: payload };
-                    localStorage.setItem('socketData', JSON.stringify(newData));
+                    localStorage.setItem("socketData", JSON.stringify(newData));
                     return newData;
                 });
             });
@@ -61,7 +100,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
             socket.on("botData", (payload) => {
                 setData((prev) => {
                     const newData = { ...prev, botData: payload };
-                    localStorage.setItem('socketData', JSON.stringify(newData));
+                    localStorage.setItem("socketData", JSON.stringify(newData));
                     return newData;
                 });
             });
@@ -70,7 +109,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
                 setData((prev) => {
                     const newData = { ...prev, serverInfo: payload };
                     console.log("serverInfo", JSON.stringify(newData));
-                    localStorage.setItem('socketData', JSON.stringify(newData));
+                    localStorage.setItem("socketData", JSON.stringify(newData));
                     return newData;
                 });
             });
@@ -101,17 +140,19 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
         return () => {
             socket?.off("connect");
             socket?.off("disconnect");
-            socket?.off('connect_error');
-            socket?.off('connect_timeout');
-            socket?.off('botInfos');
-            socket?.off('serverInfo');
-            socket?.off('gameConf');
-            socket?.off('botData');
+            socket?.off("connect_error");
+            socket?.off("connect_timeout");
+            socket?.off("botInfos");
+            socket?.off("serverInfo");
+            socket?.off("gameConf");
+            socket?.off("botData");
         };
     }, [socket]);
 
     return (
-        <SocketContext.Provider value={{ socket, data, isConnected, isLoading }}>
+        <SocketContext.Provider
+            value={{ socket, data, isConnected, isLoading }}
+        >
             {children}
         </SocketContext.Provider>
     );

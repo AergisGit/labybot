@@ -1,0 +1,116 @@
+.data-dashboard {
+    padding: 1rem;
+    background-color: var(--color-dashboard-background);
+    border-radius: 8px;
+    border: 1px solid var(--color-dashboard-border);
+    height: 800px; 
+}
+
+.dashboard-status {
+    margin-bottom: 1rem;
+    padding: 0.5rem;
+    background-color: var(--color-dashboard-status);
+    border-radius: 4px;
+    border: 1px solid var(--color-dashboard-border);
+}
+
+.dashboard-status h2 {
+    margin: 0;
+    color: var(--color-dashboard-status-text);
+    font-size: 1.2rem;
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    gap: 1rem;
+    height: 90%;
+}
+
+.dashboard-section {
+    background-color: var(--color-dashboard-section);
+    padding: 1rem;
+    border-radius: 6px;
+    border: 1px solid var(--color-dashboard-border);
+    overflow-x: auto;
+    word-break: break-word;
+    min-width: 0; /* Important pour que le flex/grid respecte la taille */
+}
+
+
+.dashboard-section h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    color: var(--color-text);
+    border-bottom: 1px solid var(--color-dashboard-border);
+    padding-bottom: 0.5rem;
+}
+
+/* Bot Info - première cellule */
+.dashboard-section:nth-child(1) {
+    grid-column: 1;
+    grid-row: 1;
+}
+
+/* Room Data - deuxième cellule */
+.dashboard-section:nth-child(2) {
+    grid-column: 1;
+    grid-row: 2;
+}
+
+/* Characters - troisième cellule qui s'étend sur toute la hauteur */
+.dashboard-section:nth-child(3) {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Ajustement spécifique pour ReactJson dans la section characters */
+.dashboard-section:nth-child(3) .react-json-view {
+    flex-grow: 1;
+    height: calc(100% - 2rem); /* Soustrait la hauteur du titre */
+    max-height: none;
+}
+
+/* Ajustement spécifique pour ReactJson */
+.dashboard-section .react-json-view {
+    max-height: 500px;
+    overflow-y: auto;
+    /* Ajout des propriétés pour les longues chaînes */
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+/* Style spécifique pour les longues valeurs dans ReactJson */
+.react-json-view .string-value {
+    word-break: break-all;
+    max-width: 100%;
+}
+
+.dashboard-status .status-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.status-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-size: 0.9rem;
+    color: var(--color-dashboard-status-text);
+}
+
+.player-count {
+    padding: 0.2rem 0.5rem;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+.server-info-time {
+    color: rgba(255, 255, 255, 0.7);
+}

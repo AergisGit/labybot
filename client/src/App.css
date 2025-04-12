@@ -1,5 +1,6 @@
 @import './styles/variables.css';
 @import './styles/layout.css';
+@import './styles/dataDashboard.css';
 
 
 /* Général */
@@ -23,6 +24,7 @@ body {
   background-color: #333;
   color: white;
   padding: 1rem;
+  padding-bottom: 0;
 }
 
 .ascii-logo {
@@ -138,4 +140,15 @@ body {
   .container {
     padding: 1rem;
   }
+}
+
+.server-info {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.server-info-time {
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
 }

@@ -17,7 +17,7 @@ export interface GameConf {
     gameName?: string;
 
     // State of the game
-    isRunning?: boolean;
+    gameRunning?: boolean;
 
     // For games like the laby, with triggers on a map
     triggerData?: TriggerDef;

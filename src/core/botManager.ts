@@ -100,19 +100,24 @@ export class BotManager {
     }
 
     public getRoomInfos() {
-        let botName: string = this.connector?.Player?.Name;
-        let botNumber: number= this.connector?.Player?.MemberNumber;
         let playerCount: number = this.connector?.chatRoom?.charactersCount;
         let roomMap: string = compressToBase64(JSON.stringify(this.connector?.chatRoom?.roomData?.MapData));
         let roomData: API_Chatroom_Data = JSON.parse(JSON.stringify(this.connector?.chatRoom?.roomData));
         
         return {
-            botName: botName || null,
-            botNumber: botNumber || null,
             playerCount: playerCount || 0,
             roomMap: roomMap || undefined,
             roomData: roomData || undefined
         };
+    }
+
+    public getBotDetails() {
+        let botName: string = this.connector?.Player?.Name;
+        let botNumber: number= this.connector?.Player?.MemberNumber;
+        return {
+            botName: botName || null,
+            botNumber: botNumber || null,
+        }
     }
 
     public updateConfig(config: ConfigFile): void {

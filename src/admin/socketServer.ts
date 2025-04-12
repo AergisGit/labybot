@@ -22,7 +22,7 @@ export const setupSocketServer = (httpServer: HttpServer, gameManager: GameManag
         //log.debug('New connection attempt', {id: socket.id,handshake: socket.handshake});
 
         // Init des données à la connexion, par un envoi immédiat :
-        socket.emit('botInfos', gameManager.getBotStatus(0));
+        socket.emit('botInfos', gameManager.getBotInfos(0));
 
         // Events for the game manager
         // Create Map to stock listeners
@@ -35,6 +35,7 @@ export const setupSocketServer = (httpServer: HttpServer, gameManager: GameManag
                 log.debug(`Emitted ${eventName} event to client ${socket.id}`);
             };
             
+            log.info(`Registering listener for ${eventName}`);   
             listeners.set(eventName, listener);
             gameManager.on(eventName, listener);
         });

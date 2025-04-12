@@ -183,7 +183,7 @@ export class Laby {
 
     private setupCharacter = async () => {
         this.conn.moveOnMap(this.botPosition.X, this.botPosition.Y);
-        this.conn.Player.SetActivePose(["Kneel"]);
+        //this.conn.Player.SetActivePose(["Kneel"]);
     };
 
     private getGameResources(gameName: string) {

@@ -4,7 +4,7 @@ import { logger } from '../../api';
 
 export const registerBotEvents = (socket: Socket, gameManager: GameManager) => {
     socket.on('getBotInfos', () => {
-        const botInfos = gameManager.getBotStatus(0); // Exemple avec botId = 0
+        const botInfos = gameManager.getBotInfos(0); // Exemple avec botId = 0
         socket.emit('botInfos', botInfos);
     });
 

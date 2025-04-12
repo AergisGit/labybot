@@ -36,9 +36,19 @@ export class GameManager extends EventEmitter {
         this.log.info("Config initialized: ", this.getConfig());
 
         await this.startBot(0); // par défaut un seul bot
-        await this.startGame(0, this.config);
+        //await this.startGame(0, this.config);
 
     }
+
+    // Emitters
+    sendServerInfo(info: any) {
+        this.emit('serverInfo', info);
+    }
+
+    sendBotInfos(botInfos: any) {
+        this.emit('botInfos', this.getBotInfos(botInfos));
+    }
+
 
     // Basic bots commands
 
@@ -53,13 +63,12 @@ export class GameManager extends EventEmitter {
             this.log.info(`Bot ${botId} started successfully.`);
 
             await this.startGame(botId, this.config);
-            this.sendBotInfosChange(botId);
 
-            // remonter le on server info
-            //const conn = botInstance.getConnector();
-            //conn.on('serverInfo', (info) => {
-            //    this.onServerInfo(info);
-            //});
+            // Get the connector and listen for serverInfo events
+            const conn = botInstance.getConnector();
+            conn.on('serverInfo', (info) => {
+                this.sendServerInfo(info);
+            });
 
             return true;
         } catch (error) {
@@ -68,14 +77,6 @@ export class GameManager extends EventEmitter {
         }
     }
 
-    onServerInfo(info: any) {
-        //this.log.debug("Received server info in GameManager:", info);
-        this.emit('serverInfo', info);
-    }
-
-    sendBotInfosChange(botInfos: any) {
-        this.emit('botInfos', this.getBotStatus(botInfos));
-    }
 
     async stopBot(botId: number = 0) {
         if (!this.isRunning.get(botId)) return;
@@ -84,7 +85,7 @@ export class GameManager extends EventEmitter {
         await botInstance.stopBot();
         this.botInstances.delete(botId);
         this.isRunning.set(botId, false);
-        this.sendBotInfosChange(botId);
+        this.sendBotInfos(botId);
 
         this.log.info(`Bot ${botId} stopped.`);
     }
@@ -99,22 +100,37 @@ export class GameManager extends EventEmitter {
     // TODO split this in two
     //  the first one for status
     //  the second to return a BotInfos structure
-    getBotStatus(botId: number = 0) {
+    getBotInfos(botId: number = 0): BotInfos | undefined {
         const botInstance = this.botInstances.get(botId);
-        const gameStatus = this.getGameStatus(botId);
-        const roomInfos = botInstance?.getRoomInfos();
-        const isRunning = this.isRunning.get(botId) || false;
+        let botInfos: BotInfos = undefined;
 
+        if (botInstance !== undefined) {
+            const gameStatus = this.getGameStatus(botId);
+            const roomInfos = this.getRoomInfos();
+            const botDetails = botInstance.getBotDetails();
+            const isRunning = this.isRunning.get(botId) || false;
+            botInfos = {
+                connected: isRunning || false,
+                botId: botId,
+                botName: botDetails?.botName || null,
+                botNumber: botDetails?.botNumber || null,
+                gameRunning: gameStatus?.gameRunning || false,
+                game: gameStatus?.game || null,
+                gameName: gameStatus?.gameName || null,
+                playerCount: roomInfos?.playerCount || 0,
+                roomMap: roomInfos?.roomMap || undefined,
+                roomData: roomInfos?.roomData || undefined
+            };
+        }
+        return botInfos;
+    }
+
+    public getGameStatus(botId: number = 0) {
+        const gameInfos = this.games.get(botId);
         return {
-            botName: roomInfos?.botName || null,
-            botNumber: roomInfos?.botNumber || null,
-            connected: isRunning,
-            gameRunning: gameStatus?.isRunning || false,
-            game: gameStatus?.game || null,
-            gameName: gameStatus?.gameName || null,
-            playerCount: roomInfos?.playerCount || 0,
-            roomMap: roomInfos?.roomMap || undefined,
-            roomData: roomInfos?.roomData || undefined
+            game: gameInfos?.config?.game,
+            gameName: gameInfos?.config?.gameName,
+            gameRunning: gameInfos?.isRunning
         };
     }
 
@@ -123,15 +139,6 @@ export class GameManager extends EventEmitter {
         if (botInstance !== undefined) {
             return botInstance.getRoomInfos();
         }
-    }
-
-    public getGameStatus(botId: number = 0) {
-        const gameInfos = this.games.get(botId);
-        return {
-            isRunning: gameInfos?.isRunning,
-            game: gameInfos?.config?.game,
-            gameName: gameInfos?.config?.gameName
-        };
     }
 
     // Config
@@ -255,12 +262,12 @@ export class GameManager extends EventEmitter {
             }
 
             this.games.set(botId, { instance: gameInstance, isRunning: true, config: gameConfig });
-            
-            this.sendBotInfosChange(botId);
+
+            this.sendBotInfos(botId);
 
             this.log.info(`Game ${gameConfig.game} started on bot ${botId}.`);
-            return true;
 
+            return true;
         } catch (e) {
             this.log.error(e);
             return false;
@@ -280,9 +287,9 @@ export class GameManager extends EventEmitter {
         if (typeof instance.stop === "function") {
             instance.stop();
             this.games.set(botId, { instance: instance, isRunning: false, config: config });
-            
-            this.sendBotInfosChange(botId);
-            
+
+            this.sendBotInfos(botId);
+
             this.log.info(`Game ${config.gameName} stopped on bot ${botId}.`);
             return true;
         } else {

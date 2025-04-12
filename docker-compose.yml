@@ -1,6 +1,6 @@
 services:
   labybot:
-    image: labybot:0.0.6
+    image: labybot:2.0.0
     container_name: labybot
     pull_policy: never # Force using local image
     volumes:

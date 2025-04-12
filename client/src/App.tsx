@@ -39,11 +39,23 @@ const App: React.FC = () => {
 
     // Mettre à jour les données à partir du contexte
     useEffect(() => {
-        if (data.botInfos) {
-            //setBotData(JSON.stringify(data.botInfos, null, 2));
-            setBotData(data.botInfos || {});
+        // Reset states if data is not available
+        if (!data) {
+            setBotData({});
+            setMap("Chargement...");
+            setBotRoomInfos("Chargement...");
+            setCharacters("Chargement...");
+            setServerInfo("serverInfo : Chargement...");
+            return;
+        }
 
-            setMap(`${data.botInfos.roomMap}`);
+        // Update states only if data is available
+        if (data.botInfos) {
+            setBotData(data.botInfos);
+            setMap(data.botInfos.roomMap || "Aucune carte disponible");
+        } else {
+            setBotData({});
+            setMap("Chargement...");
         }
 
         if (data.botInfos?.roomData) {
@@ -61,9 +73,17 @@ const App: React.FC = () => {
             setCharacters(
                 `Personnages dans la salle (${data.botInfos.playerCount}/${data.botInfos.roomData.Limit}) :\n${charactersString.join("\n")}`,
             );
+        } else {
+            setBotRoomInfos("Chargement des informations de la salle...");
+            setCharacters("Chargement des personnages...");
         }
-        if (data?.serverInfo) {
-            setServerInfo(`${JSON.stringify(data?.serverInfo)}`);
+
+        if (data.serverInfo) {
+            setServerInfo(JSON.stringify(data.serverInfo));
+        } else {
+            setServerInfo(
+                "serverInfo : En attente des informations du serveur...",
+            );
         }
     }, [data]);
 

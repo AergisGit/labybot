@@ -69,6 +69,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
             socket.on("serverInfo", (payload) => {
                 setData((prev) => {
                     const newData = { ...prev, serverInfo: payload };
+                    console.log("serverInfo", JSON.stringify(newData));
                     localStorage.setItem('socketData', JSON.stringify(newData));
                     return newData;
                 });

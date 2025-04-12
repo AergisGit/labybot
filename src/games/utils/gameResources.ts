@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { CoordObject } from "../../apiConnector";
 import { TriggerDef } from "./triggerManager";
-import { Logger } from '../../api';
+import { Logger } from '../../logger';
 
 
 export interface ResourceData {

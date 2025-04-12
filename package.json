@@ -12,19 +12,16 @@
         "docker:push": "docker push ghcr.io/AergisGit/labybot:latest"
     },
     "dependencies": {
-        "bc-stubs": "^111.0.0",
+        "bc-stubs": "^114.0.0",
         "express": "^5.1.0",
-        "lodash": "^4.17.21",
         "lz-string": "^1.5.0",
         "mongodb": "^6.9.0",
-        "prom-client": "^14.2.0",
         "socket.io": "^4.8.1",
         "socket.io-client": "^4.7.2"
     },
     "devDependencies": {
         "@tsconfig/node18": "^18.2.1",
         "@types/express": "^5.0.1",
-        "@types/lodash": "^4.14.198",
         "@types/node": "^20.17.27",
         "esbuild": "^0.19.4",
         "prettier": "^3.3.3",

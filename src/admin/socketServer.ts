@@ -4,7 +4,7 @@ import { GameManager } from '../core/gameManager';
 import { registerBotEvents } from './events/botEvents';
 import { registerGameEvents } from './events/gameEvents';
 import { GAME_EVENTS, GameEvent } from './events/gameManagerEvents';
-import { Logger } from "../api";
+import { Logger } from "../logger";
 
 export const setupSocketServer = (httpServer: HttpServer, gameManager: GameManager) => {
     const log = new Logger("SOCK", "debug", true, "cyan");
@@ -32,7 +32,7 @@ export const setupSocketServer = (httpServer: HttpServer, gameManager: GameManag
         GAME_EVENTS.forEach((eventName) => {
             const listener = (data: any) => {
                 socket.emit(eventName, data);
-                log.debug(`Emitted ${eventName} event to client ${socket.id}`);
+                //log.debug(`Emitted ${eventName} event to client ${socket.id}`);
             };
             
             log.info(`Registering listener for ${eventName}`);   

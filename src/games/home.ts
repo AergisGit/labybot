@@ -14,7 +14,7 @@
 
 // Les imports ci-dessous servent à ce que le code sur cette page puissent utiliser du contenu d'autres fichiers du projet
 //
-import { logger } from "../api";
+import { logger } from "../logger";
 //import { decompressFromBase64 } from "lz-string";
 import { API_Connector, CoordObject, MessageEvent } from "../apiConnector";
 import { makeDoorRegion, MapRegion, positionEquals } from "../apiMap";

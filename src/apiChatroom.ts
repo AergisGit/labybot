@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-import { logger } from './api';
+import { logger } from './logger';
 import { EventEmitter } from "stream";
 import { API_Character, API_Character_Data } from "./apiCharacter";
 import { API_Connector, CoordObject, SingleItemUpdate } from "./apiConnector";
@@ -126,13 +126,6 @@ export class API_Chatroom extends EventEmitter {
                 )
             ) {
                 removed.push(oldItem);
-
-                this.conn.getBot()?.onCharacterEventPub(this.conn, {
-                    name: "ItemRemove",
-                    character: this.getCharacter(memberNumber),
-                    source: this.getCharacter(sourceMemberNo),
-                    item: oldItem,
-                });
             }
         }
         if (removed.length > 0)
@@ -148,13 +141,6 @@ export class API_Chatroom extends EventEmitter {
                     this.getCharacter(sourceMemberNo),
                     newItem,
                 );
-
-                this.conn.getBot()?.onCharacterEventPub(this.conn, {
-                    name: "ItemAdd",
-                    character: this.getCharacter(memberNumber),
-                    source: this.getCharacter(sourceMemberNo),
-                    item: newItem,
-                });
             } else if (
                 JSON.stringify(newItem.getData()) !==
                 JSON.stringify(oldItem.getData())
@@ -165,13 +151,6 @@ export class API_Chatroom extends EventEmitter {
                     newItem,
                     oldItem,
                 );
-
-                this.conn.getBot()?.onCharacterEventPub(this.conn, {
-                    name: "ItemChange",
-                    character: this.getCharacter(memberNumber),
-                    source: this.getCharacter(sourceMemberNo),
-                    item: newItem,
-                });
             }
         }
     }

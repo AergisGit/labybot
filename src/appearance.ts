@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-import { logger } from './api';
+import { logger } from './logger';
 import { API_Character, API_Character_Data } from "./apiCharacter";
 import { isBind, isBody, isClothing, isCosplay } from "./assetHelpers";
 import { wait } from "./util/time";

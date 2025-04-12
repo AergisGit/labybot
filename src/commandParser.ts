@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-import { logger } from './api';
+import { logger } from './logger';
 import { API_Character } from "./apiCharacter";
 import { API_Connector, MessageEvent } from "./apiConnector";
 import { BC_Server_ChatRoomMessage, TBeepType } from "./logicEvent";

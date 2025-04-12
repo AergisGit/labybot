@@ -12,11 +12,20 @@
  * limitations under the License.
  */
 
-import { logger } from './api';
+import { logger } from './logger';
 import { API_Chatroom } from "./apiChatroom";
 import { API_Connector, CoordObject, TellType } from "./apiConnector";
 import { AppearanceType } from "./appearance";
 import { BC_AppearanceItem } from "./item";
+
+export const BC_PermissionLevel = [
+    "Everyone, no exceptions",
+    "Everyone, except blacklist",
+    "Owner, Lover, whitelist & Dominants",
+    "Owner, Lover and whitelist only",
+    "Owner and Lover only",
+    "Owner only",
+];
 
 interface PoseObject {
     Name: string;

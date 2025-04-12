@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-import { logger } from './api';
+import { logger } from './logger';
 import { decompressFromBase64 } from "lz-string";
 import { API_Character } from "./apiCharacter";
 import { API_Chatroom_Data } from "./apiChatroom";

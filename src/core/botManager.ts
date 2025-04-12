@@ -13,7 +13,7 @@
  */
 
 import { compressToBase64 } from "lz-string";
-import { Logger } from '../api';
+import { Logger } from '../logger';
 import { API_Connector } from "../apiConnector";
 import { API_Chatroom_Data } from "../apiChatroom";
 import { ConfigFile } from "../config";
@@ -47,12 +47,12 @@ export class BotManager {
 
         if (this.config.mongo_uri && this.config.mongo_db) {
             this.mongoClient = new MongoClient(this.config.mongo_uri, {
-                ssl: true,
-                tls: true,
+                ssl: false,
+                tls: false,
             });
-            this.log.log("Connecting to mongo...");
+            this.log.log("Connecting to mongo... On Url: ",  this.config.mongo_uri);
             await this.mongoClient.connect();
-            this.log.log("...connected!");
+            this.log.log("...connected! Accessing database: ", this.config.mongo_db);
             this.db = this.mongoClient.db(this.config.mongo_db);
             await this.db.command({ ping: 1 });
             this.log.log("...ping successful!");

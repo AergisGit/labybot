@@ -1,11 +1,8 @@
 import { BotManager, SERVER_URL } from './botManager';
 import { ConfigFile, getDefaultConfig } from '../config';
-import { Logger } from '../api';
+import { Logger } from '../logger';
 import { BotInfos } from "@shared/types/bot";
 import { API_Connector } from '../apiConnector'
-import { KidnappersGameRoom } from "../hub/logic/kidnappersGameRoom";
-import { RoleplaychallengeGameRoom } from "../hub/logic/roleplaychallengeGameRoom";
-import { MaidsPartyNightSinglePlayerAdventure } from "../hub/logic/maidsPartyNightSinglePlayerAdventure";
 import { Dare } from "../games/dare";
 import { PetSpa } from "../games/petspa";
 import { Home } from "../games/home";
@@ -281,30 +278,7 @@ export class GameManager extends EventEmitter {
             let connector = botInstance.getConnector();
             let db = botInstance.getDB();
             switch (gameConfig.game) {
-
-                case "kidnappers":
-                    gameInstance = new KidnappersGameRoom(connector, gameConfig);
-                    break;
-
-                case "roleplay":
-                    gameInstance = new RoleplaychallengeGameRoom(connector, gameConfig);
-                    break;
-
-                case "maidspartynight":
-                    if (!gameConfig.user2 || !gameConfig.password2) {
-                        throw new Error(`Need user2 and password2 for Maid's Party Night`);
-                    }
-                    // Would it be worth it to use a bot[1] for this ?
-                    let serverUrl = this.config.url ?? SERVER_URL[this.config.env];
-                    const connector2 = new API_Connector(
-                        serverUrl,
-                        gameConfig.user2,
-                        gameConfig.password2,
-                        gameConfig.env,
-                    );
-                    gameInstance = new MaidsPartyNightSinglePlayerAdventure(connector, connector2);
-                    break;
-
+                
                 case "dare":
                     gameInstance = new Dare(connector);
                     break;

@@ -13,7 +13,6 @@
  */
 
 import { Console } from 'node:console';
-//import { AssetType } from "./appearance.js";
 
 export type loglevel = 'debug' | 'info' | 'warn' | 'error';
 export type logColor = 'black' | 'red' | 'green' | 'yellow' |'blue' | 'magenta' | 'cyan' | 'white';
@@ -161,12 +160,3 @@ export class Logger extends Console {
 
 //export default Logger;
 export const logger = new Logger();
-
-export const BC_PermissionLevel = [
-    "Everyone, no exceptions",
-    "Everyone, except blacklist",
-    "Owner, Lover, whitelist & Dominants",
-    "Owner, Lover and whitelist only",
-    "Owner and Lover only",
-    "Owner only",
-];

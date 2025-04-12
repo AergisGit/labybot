@@ -4,7 +4,7 @@ import { createServer } from 'http';
 import { setupSocketServer } from './socketServer';
 import { GameManager } from "../core/gameManager";
 import { apiRoutes } from './routes';
-import { Logger } from "../api";
+import { Logger } from "../logger";
 
 export class AdminServer {
   public log: Logger;

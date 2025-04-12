@@ -22,7 +22,7 @@ import { CommandParser } from "../commandParser";
 import { BC_Server_ChatRoomMessage } from "../logicEvent";
 import { formatDuration, wait } from "../util/time";
 
-import { Logger } from '../api';
+import { Logger } from '../logger';
 import { perf } from '../util/perf';
 import { TriggerDef, TriggerManager } from "./utils/triggerManager";
 import { ResourceData, ResourceLoader } from "./utils/gameResources";

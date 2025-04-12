@@ -13,11 +13,10 @@
  */
 
 import { io } from "socket.io-client";
-import { logger } from './api';
+import { logger } from './logger';
 import { API_Character, API_Character_Data, ItemPermissionLevel } from "./apiCharacter";
 import { API_Chatroom, API_Chatroom_Data, ChatRoomAccessVisibility } from "./apiChatroom";
 import { Socket } from "socket.io-client";
-import { LogicBase } from "./logicBase";
 import { API_AppearanceItem, BC_AppearanceItem } from "./item";
 import { compressToUTF16 } from "lz-string";
 import { EventEmitter } from "stream";
@@ -142,8 +141,6 @@ export class API_Connector extends EventEmitter {
 
     private leaveReasons = new Map<number, LeaveReason>();
 
-    private bot?: LogicBase;
-
     constructor(
         private url: string,
         public username: string,
@@ -207,10 +204,6 @@ export class API_Connector extends EventEmitter {
 
     public isConnected(): boolean {
         return this.sock.connected;
-    }
-
-    public getBot(): LogicBase {
-        return this.bot;
     }
 
     public get Player(): API_Character {
@@ -393,12 +386,6 @@ export class API_Connector extends EventEmitter {
         const char = this._chatRoom.getCharacter(resp.Character.MemberNumber);
 
         this.emit("CharacterEntered", char);
-        this.bot?.onEvent({
-            name: "CharacterEntered",
-            connection: this,
-            character: char,
-        });
-        this.bot?.onCharacterEnteredPub(this, char);
     };
 
     private onChatRoomSyncMemberLeave = (resp: any) => {
@@ -417,17 +404,6 @@ export class API_Connector extends EventEmitter {
                 this.leaveReasons.get(resp.SourceMemberNumber) !==
                 LeaveReason.DISCONNECT,
         });
-        this.bot?.onEvent({
-            name: "CharacterLeft",
-            connection: this,
-            sourceMemberNumber: resp.SourceMemberNumber,
-            character: leftMember,
-            leaveMessage: null,
-            intentional:
-                this.leaveReasons.get(resp.SourceMemberNumber) !==
-                LeaveReason.DISCONNECT,
-        });
-        this.bot?.onCharacterLeftPub(this, leftMember, true);
     };
 
     private onChatRoomSyncRoomProperties = (resp: API_Chatroom_Data) => {
@@ -486,12 +462,6 @@ export class API_Connector extends EventEmitter {
                 Expression: resp.Name,
             },
         });
-        this.bot?.onCharacterEventPub(this, {
-            name: "ItemChange",
-            item,
-            character: char,
-            source: char,
-        });
     };
 
     private onChatRoomSyncPose = (resp: any) => {
@@ -501,10 +471,6 @@ export class API_Connector extends EventEmitter {
             ActivePose: resp.Pose,
         });
         this.emit("PoseChange", {
-            character: char,
-        });
-        this.bot?.onCharacterEventPub(this, {
-            name: "PoseChanged",
             character: char,
         });
     };
@@ -556,13 +522,6 @@ export class API_Connector extends EventEmitter {
             sender: char,
             message: msg,
         } as MessageEvent);
-        this.bot?.onEvent({
-            name: "Message",
-            connection: this,
-            Sender: char,
-            message: msg,
-        });
-        this.bot?.onMessagePub(this, msg, char);
     };
 
     private onChatRoomAllowItem = (resp: ChatRoomAllowItemResponse) => {
@@ -588,12 +547,6 @@ export class API_Connector extends EventEmitter {
 
     private onAccountBeep = (payload: TBeepType) => {
         if (payload?.Message && typeof payload.Message === "string") payload.Message = payload.Message.split("\n\n")[0];
-        // legacy
-        this.bot?.onEvent({
-            name: "Beep",
-            connection: this,
-            beep: payload,
-        });
         // new
         this.emit("Beep", { payload });
     };
@@ -746,10 +699,6 @@ export class API_Connector extends EventEmitter {
         });
     }
 
-    public startBot(bot: LogicBase) {
-        this.bot = bot;
-    }
-
     public setBotDescription(desc: string) {
         this.accountUpdate({
             Description: LZSTRING_MAGIC + compressToUTF16(desc),
@@ -829,7 +778,6 @@ export class API_Connector extends EventEmitter {
     public disconnect(): void {
         logger.info("Disconnecting from the server...");
         this.sock.disconnect(); // Disconnect the socket
-        this.bot = undefined; // Clear the bot reference
         this._chatRoom = undefined; // Clear the chat room reference
         this._player = undefined; // Clear the player reference
         logger.info("Disconnected successfully.");

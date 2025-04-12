@@ -1,6 +1,6 @@
 import { Socket } from 'socket.io';
 import { GameManager } from '../../core/gameManager';
-import { logger } from '../../api';
+import { logger } from '../../logger';
 
 export const registerBotEvents = (socket: Socket, gameManager: GameManager) => {
     socket.on('getBotInfos', () => {

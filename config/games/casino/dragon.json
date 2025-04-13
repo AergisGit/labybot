@@ -1,0 +1,22 @@
+{
+    "room": {
+        "Name": "The Dragon Casino",
+        "Description": "Enter the Dragon Casino! Bot operated. No refunds. No regrets. No shame",
+        "Background": "Management",
+        "Private": true,
+        "Locked": false,
+        "Space": "X",
+        "Ban": [],
+        "Limit": 10,
+        "BlockCategory": [],
+        "Game": "",
+        "Language": "EN",
+        "Admin": [197228,189644,186990]
+    },
+    "mongo_db": "casino_dragon",
+    "casino": {
+        "cocktail": "dragon",
+        "forfeits":[],
+        "services":[]
+    }
+}

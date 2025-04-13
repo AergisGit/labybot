@@ -13,12 +13,19 @@ WORKDIR /tmp/source/client
 COPY client/package*.json ./
 RUN npm install
 
-# Copier tout le code source dans le répertoire temporaire
+# Bot : Copier tout le code source dans le répertoire temporaire
 WORKDIR /tmp/source
-COPY . .
+COPY tsconfig.json ./
+COPY src ./src
+COPY shared ./shared
 
 # Bot : Compiler le TypeScript
 RUN npm run build
+
+# Gui : Copier tout le code source dans le répertoire temporaire
+COPY client/tsconfig.json ./client
+COPY client/src ./client/src
+COPY client/public ./client/public
 
 # Gui : Compiler le client React
 WORKDIR /tmp/source/client
@@ -32,13 +39,9 @@ WORKDIR /bot
 
 # Copier uniquement les fichiers nécessaires depuis l'étape de build
 COPY --from=builder /tmp/source/out /bot/
-#COPY --from=builder /tmp/source/resources /bot/resources
 COPY --from=builder /tmp/source/shared /bot/shared
 COPY --from=builder /tmp/source/client/build /bot/public/
 COPY --from=builder /tmp/source/package*.json /bot/
-
-# Installer uniquement les dépendances de production
-#RUN npm install --only=production
 
 # Exposer le port du serveur
 EXPOSE 3000

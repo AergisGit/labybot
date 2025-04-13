@@ -1,5 +1,5 @@
 import { performance } from 'node:perf_hooks';
-import { Logger } from '../logger';
+import { Logger } from './logger';
 
 export class PerfLogger {
   private enabled: boolean;

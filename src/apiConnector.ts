@@ -13,7 +13,7 @@
  */
 
 import { io } from "socket.io-client";
-import { logger } from './logger';
+import { logger } from './utils/logger';
 import { API_Character, API_Character_Data, ItemPermissionLevel } from "./apiCharacter";
 import { API_Chatroom, API_Chatroom_Data, ChatRoomAccessVisibility } from "./apiChatroom";
 import { Socket } from "socket.io-client";
@@ -22,7 +22,7 @@ import { compressToUTF16 } from "lz-string";
 import { EventEmitter } from "stream";
 import { BC_Server_ChatRoomMessage, TBeepType } from "./logicEvent";
 import { SocketWrapper } from "./socketWrapper";
-import { wait } from "./util/time";
+import { wait } from "./utils/time";
 
 export enum LeaveReason {
     DISCONNECT = "ServerDisconnect",

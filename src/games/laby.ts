@@ -20,12 +20,12 @@ import { API_Character } from "../apiCharacter";
 import { AssetGet, BC_AppearanceItem, API_AppearanceItem } from "../item";
 import { CommandParser } from "../commandParser";
 import { BC_Server_ChatRoomMessage } from "../logicEvent";
-import { formatDuration, wait } from "../util/time";
+import { formatDuration, wait } from "../utils/time";
 
-import { Logger } from '../logger';
-import { perf } from '../util/perf';
+import { Logger } from '../utils/logger';
+import { perf } from '../utils/perf';
 import { TriggerDef, TriggerManager } from "./utils/triggerManager";
-import { ResourceData, ResourceLoader } from "./utils/gameResources";
+import { GameData, ResourceLoader } from "../managers/config/gameData";
 import * as fs from 'fs'; // for the winners and challengers list
 
 const SAVEFILE_PATH = "/bot/save/";
@@ -53,7 +53,7 @@ export class Laby {
 
     public log: Logger;
     private triggerManager: TriggerManager;
-    private resourceData: ResourceData;
+    private gameData: GameData;
     private map: string = "";
     private botPosition: CoordObject = { "X": 0, "Y": 0 };
     private triggersData: TriggerDef[] = [];
@@ -137,7 +137,7 @@ export class Laby {
     }
 
 
-    public stop(): boolean {
+    public async stop(): Promise<void> {
         this.log.info("Stopping Laby game...");
 
         // Désenregistrer les listeners dans conn
@@ -160,7 +160,6 @@ export class Laby {
         this.commandParser.unregister("debug");
 
         this.log.info("Laby game stopped.");
-        return true;
     }
 
 
@@ -188,12 +187,12 @@ export class Laby {
 
     private getGameResources(gameName: string) {
         const resourceLoader = new ResourceLoader('laby');
-        this.resourceData = resourceLoader.loadResource(gameName);
+        this.gameData = resourceLoader.loadResource(gameName);
 
-        this.map = this.resourceData.map || this.map;
-        this.botPosition = this.resourceData.botPosition || this.botPosition;
-        this.botDescription = this.resourceData.botDescription || this.botDescription;
-        this.triggersData = this.resourceData.triggersData || this.triggersData;
+        this.map = this.gameData.map || this.map;
+        this.botPosition = this.gameData.botPosition || this.botPosition;
+        this.botDescription = this.gameData.botDescription || this.botDescription;
+        this.triggersData = this.gameData.triggersData || this.triggersData;
     }
 
     // Callback function to be invoked when a trigger is activated

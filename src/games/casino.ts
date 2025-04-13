@@ -21,11 +21,11 @@ import { BC_Server_ChatRoomMessage, TBeepType } from "../logicEvent";
 import { CasinoStore, Player } from "./casino/casinostore";
 import { ROULETTE_WHEEL } from "./casino/rouletteWheelBundle";
 import { API_AppearanceItem, AssetGet, BC_AppearanceItem } from "../item";
-import { remainingTimeString, wait } from "../util/time";
+import { remainingTimeString, wait } from "../utils/time";
 import { importBundle } from "../appearance";
 import { FORFEITS, forfeitsString, restraintsRemoveString, SERVICES, servicesString } from "./casino/forfeits";
 import { Cocktail, COCKTAILS } from "./casino/cocktails";
-import { generatePassword } from "../util/string";
+import { generatePassword } from "../utils/string";
 
 const FREE_CHIPS = 20;
 const TIME_UNTIL_SPIN_MS = 60000;
@@ -162,6 +162,68 @@ export class Casino {
             const scriptItem = this.conn.Player.Appearance.AddItem(AssetGet("ItemScript", "Script"));
             scriptItem.setProperty("Hide", ['Height', 'BodyUpper', 'ArmsLeft', 'ArmsRight', 'HandsLeft', 'HandsRight', 'BodyLower', 'HairFront', 'HairBack', 'Eyebrows', 'Eyes', 'Eyes2', 'Mouth', 'Nipples', 'Pussy', 'Pronouns', 'Head', 'Blush', 'Fluids', 'Emoticon', 'ItemNeck', 'ItemHead', 'Cloth', 'Bra', 'Socks', 'Shoes', 'ClothAccessory', 'Necklace', 'ClothLower', 'Panties', 'Suit', 'Gloves']);
         }, 500);
+    }
+
+    public async stop(): Promise<void> {
+        // Si la roue n'a pas encore tourné
+        if (this.willSpinAt !== undefined) {
+            console.log("Stopping casino: Cancelling bets and preventing new ones.");
+
+            // Empêcher de nouveaux paris
+            this.commandParser.unregister("bet");
+
+            // Annuler les paris en cours et rembourser les joueurs
+            for (const bet of this.rouletteGame.getBets()) {
+                const player = await this.store.getPlayer(bet.memberNumber);
+                player.credits += bet.stake;
+                await this.store.savePlayer(player);
+                this.conn.SendMessage(
+                    "Chat",
+                    `${bet.memberName}, your bet of ${bet.stake} chips has been refunded.`
+                );
+            }
+
+            // Nettoyer les paris
+            this.rouletteGame.clear();
+
+            // Annuler le timer de spin
+            if (this.spinTimeout !== undefined) {
+                clearInterval(this.spinTimeout);
+                this.spinTimeout = undefined;
+            }
+
+            this.willSpinAt = undefined;
+        }
+
+        // Si la roue est en train de tourner, attendre la fin
+        if (this.resetTimeout !== undefined) {
+            console.log("Waiting for the current spin to finish...");
+            await new Promise((resolve) => setTimeout(resolve, 15000)); // Attendre 15 secondes (ou ajuster selon le temps de spin)
+        }
+
+        // Clear all registered commands in the CommandParser
+        this.commandParser.clear();
+
+        // Remove all event listeners
+        this.conn.off("CharacterEntered", this.onCharacterEntered);
+        this.conn.off("Beep", this.onBeep);
+
+        // Clear any active timeouts or intervals
+        if (this.spinTimeout !== undefined) {
+            clearInterval(this.spinTimeout);
+            this.spinTimeout = undefined;
+        }
+        if (this.resetTimeout !== undefined) {
+            clearTimeout(this.resetTimeout);
+            this.resetTimeout = undefined;
+        }
+
+        // Reset any state variables
+        this.willSpinAt = undefined;
+        this.lockedItems.clear();
+
+        // Log or notify that the casino has been stopped
+        console.log("Casino has been stopped and all resources have been released.");
     }
 
     private getSign(): API_AppearanceItem {
@@ -467,7 +529,7 @@ export class Casino {
 
         sender.Appearance.RemoveItem(restraint.items()[0].Group);
         this.lockedItems.get(sender.MemberNumber)?.delete(restraint.items()[0].Group);
-        
+
         this.conn.SendMessage(
             "Chat",
             `${sender} paid to remove their ${restraint.name}. Enjoy your freedom, while it lasts.`,

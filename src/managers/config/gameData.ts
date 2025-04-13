@@ -1,15 +1,32 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { CoordObject } from "../../apiConnector";
-import { TriggerDef } from "./triggerManager";
-import { Logger } from '../../logger';
+import { readFile } from "fs/promises";
+import { CoordObject, RoomDefinition } from "../../apiConnector";
+import { TriggerDef } from "../../games/utils/triggerManager";
+import { CasinoConfig } from "../../games/casino";
+import { Logger } from '../../utils/logger';
 
 
-export interface ResourceData {
-  map?: string;
-  botPosition?: CoordObject;
+export interface GameData {
+  room?: RoomDefinition;
   botDescription?: string[];
+
+  map?: string;
+  maps?: [{name: string, map: string }]; // Pour les jeux avec plusieurs maps
+  botPosition?: CoordObject;
+
   triggersData?: TriggerDef[];
+
+  mongo_db?: string;
+  casino?: CasinoConfig;
+}
+
+// Get GameData from file
+export async function getGameData(game: string, gameName: string): Promise<GameData> {
+    const cfgFile = process.argv[2] ?? `./config/games/${game}/${gameName}.json`;
+    const configString = await readFile(cfgFile, "utf-8");
+
+    return  JSON.parse(configString) as GameData;
 }
 
 export class ResourceLoader {
@@ -17,17 +34,17 @@ export class ResourceLoader {
   private log: Logger;
 
   constructor(game: string) {
-    this.baseDir = path.resolve(__dirname, `./resources/games/${game}/`)
+    this.baseDir = path.resolve(__dirname, `./config/games/${game}/`)
     this.log = new Logger('URES', 'debug', true, 'blue');
   }
 
   /**
    * Charge une ressource JSON depuis un fichier et valide les données nécessaires.
-   * @param resourceName Nom de la ressource (par exemple, "yumi1").
-   * @returns Les données JSON sous forme d'objet `ResourceData` ou null si une erreur survient.
+   * @param gameName Nom de la ressource (par exemple, "yumi1").
+   * @returns Les données JSON sous forme d'objet `GameData` ou null si une erreur survient.
    */
-  loadResource(resourceName: string): ResourceData | null {
-    const filePath = path.join(this.baseDir, `${resourceName}.json`);
+  loadResource(gameName: string): GameData | null {
+    const filePath = path.join(this.baseDir, `${gameName}.json`);
     if (!fs.existsSync(filePath)) {
       this.log.error(`The file ${filePath} does not exist.`);
       return null;
@@ -44,7 +61,7 @@ export class ResourceLoader {
         (data.botDescription && !Array.isArray(data.botDescription)) ||
         (data.triggersData && !Array.isArray(data.triggersData))
       ) {
-        this.log.error(`The content of file ${resourceName}.json isn't valid`);
+        this.log.error(`The content of file ${gameName}.json isn't valid`);
         return null;
       }
 
@@ -56,7 +73,7 @@ export class ResourceLoader {
         triggersData: data.triggersData,
       };
     } catch (error) {
-      this.log.error(`Error while loading ${resourceName}.json :`, error);
+      this.log.error(`Error while loading ${gameName}.json :`, error);
       return null;
     }
   }

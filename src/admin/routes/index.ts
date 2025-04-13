@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { botRoutes } from './botRoutes';
 import { gameRoutes } from './gameRoutes';
-import { GameManager } from '../../core/gameManager';
+import { GameManager } from '../../managers/gameManager';
 
 export const apiRoutes = (gameManager: GameManager) => {
     const router = Router();

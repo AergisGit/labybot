@@ -14,7 +14,7 @@
 
 // Les imports ci-dessous servent à ce que le code sur cette page puissent utiliser du contenu d'autres fichiers du projet
 //
-import { logger } from "../logger";
+import { logger } from "../utils/logger";
 //import { decompressFromBase64 } from "lz-string";
 import { API_Connector, CoordObject, MessageEvent } from "../apiConnector";
 import { makeDoorRegion, MapRegion, positionEquals } from "../apiMap";
@@ -22,7 +22,7 @@ import { API_Character } from "../apiCharacter";
 import { AssetGet, BC_AppearanceItem, API_AppearanceItem, getAssetDef } from "../item";
 import { CommandParser } from "../commandParser";
 import { BC_Server_ChatRoomMessage } from "../logicEvent";
-import { wait } from "../util/time";
+import { wait } from "../utils/time";
 
 
 // Parametrage pour la cartes

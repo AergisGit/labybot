@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-import { logger } from './logger';
+import { logger } from './utils/logger';
 import { EventEmitter } from "stream";
 import { API_Character, API_Character_Data } from "./apiCharacter";
 import { API_Connector, CoordObject, SingleItemUpdate } from "./apiConnector";

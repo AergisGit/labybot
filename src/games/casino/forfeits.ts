@@ -14,7 +14,7 @@
 
 import { API_Character } from "../../apiCharacter";
 import { AssetGet, BC_AppearanceItem } from "../../item";
-import { generatePassword } from "../../util/string";
+import { generatePassword } from "../../utils/string";
 import { PET_EARS } from "../petspa";
 
 interface Forfeit {

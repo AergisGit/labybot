@@ -12,25 +12,27 @@
  * limitations under the License.
  */
 import { readFile } from "fs/promises";
-import { RoomDefinition } from "./apiConnector";
-import { CasinoConfig } from "./games/casino";
-import { Laby } from "./games/laby";
+import { RoomDefinition } from "../../apiConnector";
+import { CasinoConfig } from "../../games/casino";
+import { Laby } from "../../games/laby";
 
 export interface ConfigFile {
+
     user: string;
     password: string;
+    user2?: string;
+    password2?: string;
     env: "live" | "test";
     url?: string;
+    
     game: string;
     gameName?: string;
-    superusers: number[];
-    room: RoomDefinition;
+
     mongo_uri?: string;
     mongo_db?: string;
 
-    user2?: string;
-    password2?: string;
-    game2?: string;
+    superusers?: number[];
+    room?: RoomDefinition;
 
     casino?: CasinoConfig;
 }

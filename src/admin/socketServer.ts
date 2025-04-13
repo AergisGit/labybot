@@ -1,10 +1,10 @@
 import { Server } from 'socket.io';
 import { Server as HttpServer } from 'http';
-import { GameManager } from '../core/gameManager';
+import { GameManager } from '../managers/gameManager';
 import { registerBotEvents } from './events/botEvents';
 import { registerGameEvents } from './events/gameEvents';
 import { GAME_EVENTS, GameEvent } from './events/gameManagerEvents';
-import { Logger } from "../logger";
+import { Logger } from "../utils/logger";
 
 export const setupSocketServer = (httpServer: HttpServer, gameManager: GameManager) => {
     const log = new Logger("SOCK", "debug", true, "cyan");

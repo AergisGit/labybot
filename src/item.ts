@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-import { logger } from './logger';
+import { logger } from './utils/logger';
 import { API_Character } from "./apiCharacter";
 import { AssetType } from "./appearance";
 import { AssetFemale3DCG, PoseFemale3DCG } from "./bcdata/female3DCG";

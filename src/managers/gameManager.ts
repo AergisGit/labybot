@@ -1,6 +1,6 @@
 import { BotManager, SERVER_URL } from './botManager';
-import { ConfigFile, getDefaultConfig } from '../config';
-import { Logger } from '../logger';
+import { ConfigFile, getDefaultConfig } from './config/config';
+import { Logger } from '../utils/logger';
 import { BotInfos } from "@shared/types/bot";
 import { API_Connector } from '../apiConnector'
 import { Dare } from "../games/dare";
@@ -9,9 +9,10 @@ import { Home } from "../games/home";
 import { Laby } from "../games/laby";
 import { Casino } from "../games/casino";
 import { EventEmitter } from 'stream';
+import { GameData, getGameData } from './config/gameData';
 
 export class GameManager extends EventEmitter {
-    private gameInstances: Map<number, { instance: any, isRunning: boolean, config: ConfigFile }>; // Gère les jeux actifs et leurs bots
+    private gameInstances: Map<number, { game: string, gameName?: string, instance: any, isRunning: boolean, gameData: GameData }>; // Gère les jeux actifs et leurs bots
     private botInstances: Map<number, BotManager>; // Gère plusieurs bots via un ID
     private isRunning: Map<number, boolean>; // Suivi de l'état de chaque bot
     private config: ConfigFile;
@@ -63,7 +64,7 @@ export class GameManager extends EventEmitter {
             //connector.on('disconnect', () => { this.sendBotInfos(botId); });
 
             // Get the connector and listen for serverInfo events
-            connector.on('serverInfo', (info) => {this.sendServerInfo(info);});
+            connector.on('serverInfo', (info) => { this.sendServerInfo(info); });
 
             // Room related events
             connector.on('RoomJoin', () => { this.sendBotInfos(botId); });
@@ -73,12 +74,12 @@ export class GameManager extends EventEmitter {
             // Plus d'infos de base pour le message reçu du serveur avant d'être émit pa le connector : BC_Server_ChatRoomMessage
             //connector.on('Message', (sender, message) => { });
             //connector.on('Beep', (payload: TBeepType) => { });
-            
+
             // Character updates
             connector.on('CharacterEntered', (char) => { this.sendBotInfos(botId); });
             connector.on('CharacterLeft', (sourceMemberNumber, character, leaveMessage, intentional) => { this.sendBotInfos(botId); });
             connector.on('PoseChange', (character) => { this.sendBotInfos(botId); });
-            
+
             // Some on : connector.wrappedSock.emit() (private)
             // That seems to come from the bot's own actions.
             // The botInfos should also be sent when the bot acts.
@@ -139,7 +140,7 @@ export class GameManager extends EventEmitter {
             this.isRunning.set(botId, true);
             this.log.info(`Bot ${botId} started successfully.`);
 
-            await this.startGame(botId, this.config);
+            await this.startGame(botId, this.config.game, this.config.gameName); // Start the game if needed
             this.setupBotListeners(botId); // Setup listeners for the bot instance
 
             return true;
@@ -198,8 +199,8 @@ export class GameManager extends EventEmitter {
     public getGameStatus(botId: number = 0) {
         const gameInfos = this.gameInstances.get(botId);
         return {
-            game: gameInfos?.config?.game,
-            gameName: gameInfos?.config?.gameName,
+            game: gameInfos?.game,
+            gameName: gameInfos?.gameName,
             gameRunning: gameInfos?.isRunning
         };
     }
@@ -213,25 +214,31 @@ export class GameManager extends EventEmitter {
 
     // Config
     public getBotConfig(botId: number = 0) {
-        const config = this.gameInstances.get(botId)?.config;
+        let user;
+        if (botId === 0) {
+            user = this.config.user;
+        } else if (botId === 1) {
+            user = this.config.user2;
+        }
+
         return {
-            user: config?.user,
-            env: config?.env,
-            game: config?.game,
+            user: user,
+            env: this.config.env,
+            game: this.config.game,
         };
     }
 
-    public getGameConfig(botId: number = 0) {
-        const config = this.gameInstances.get(botId)?.config;
-        return {
-            game: config?.game,
-            gameName: config?.gameName,
-            superusers: config?.superusers,
-            room: config?.room
-        };
+    public async getGameData(botId: number = 0): Promise<GameData | undefined> {
+        const gameInfos = this.gameInstances.get(botId);
+        if (!gameInfos) {
+            this.log.warn(`No game is running on bot ${botId}.`);
+            return undefined;
+        }
+        const { game, gameName } = gameInfos;
+        return await getGameData(game, gameName);
     }
 
-    public updateGameConfig(newConfig: Partial<ConfigFile>, botId: number = 0) {
+    public updateGameData(newConfig: Partial<ConfigFile>, botId: number = 0) {
         this.config = { ...this.config, ...newConfig };
         this.log.info(`Updated config for bot ${botId}:`, this.getConfig());
     }
@@ -252,39 +259,39 @@ export class GameManager extends EventEmitter {
 
     // Games
 
-    public async startGame(botId: number = 0, gameConfig?: ConfigFile): Promise<boolean> {
+    public async startGame(botId: number = 0, game?: string, gameName?: string): Promise<boolean> {
         try {
             const botInstance = this.botInstances.get(botId);
             if (!botInstance) {
-                this.log.error(`Game ${gameConfig.game} cannot start, bot ${botId} is not connected.`);
-                throw new Error(`Bot ${botId} is not connected.`);
+                throw new Error(`Game ${game} cannot start, bot ${botId} is not connected.`);
             }
 
             if (this.gameInstances.has(botId)) {
                 const gameInfos = this.gameInstances.get(botId)
                 if (gameInfos.isRunning) {
                     this.log.warn(`A game is already running on bot ${botId}. Stopping it first.`);
-                    await this.stopGame(botId);
-                }
-                else {
-                    gameConfig = gameInfos.config;
-                    if (gameConfig === undefined) {
-                        throw new Error(`Game ${gameConfig.game} cannot start on bot ${botId}, no config provided.`);
+                    if (!await this.stopGame(botId)) {
+                        throw new Error(`The game on bot ${botId} wasn't set to be stopped. Stop the bot to stop the game.`);
                     }
                 }
+                game = game || gameInfos.game;
+                gameName = gameName || gameInfos.gameName || "default";
             }
 
-            let gameInstance;
-            let connector = botInstance.getConnector();
-            let db = botInstance.getDB();
-            switch (gameConfig.game) {
-                
+
+            let gameInstance: any;
+            const gameData = await getGameData(game, gameName);
+            const connector = botInstance.getConnector();
+            switch (game) {
+
                 case "dare":
                     gameInstance = new Dare(connector);
                     break;
 
                 case "casino":
-                    gameInstance = new Casino(connector, db, gameConfig.casino);
+                    await botInstance.connectToDatabase();
+                    let db = botInstance.getDB();
+                    gameInstance = new Casino(connector, db, gameData.casino);
                     break;
 
                 case "petspa":
@@ -293,24 +300,26 @@ export class GameManager extends EventEmitter {
                     break;
 
                 case "home":
-                    gameInstance = new Home(connector, gameConfig.superusers);
+                    gameInstance = new Home(connector, this.config.superusers);
                     await gameInstance.init();
                     break;
 
                 case "laby":
-                    gameInstance = new Laby(connector, gameConfig.superusers, gameConfig.gameName);
+                    gameInstance = new Laby(connector, this.config.superusers, gameName);
                     await gameInstance.init();
                     break;
 
                 default:
-                    throw new Error(`Unknown game : ${gameConfig.game}`);
+                    throw new Error(`Unknown game : ${game}`);
             }
 
-            this.gameInstances.set(botId, { instance: gameInstance, isRunning: true, config: gameConfig });
+            this.gameInstances.set(botId,
+                { game: game, gameName: gameName, instance: gameInstance, isRunning: true, gameData: gameData }
+            );
 
             this.sendBotInfos(botId);
 
-            this.log.info(`Game ${gameConfig.game} started on bot ${botId}.`);
+            this.log.info(`Game ${game} started on bot ${botId}.`);
 
             return true;
         } catch (e) {
@@ -319,7 +328,6 @@ export class GameManager extends EventEmitter {
         }
     }
 
-
     public async stopGame(botId: number = 0): Promise<boolean> {
         const gameInfos = this.gameInstances.get(botId);
         if (!gameInfos) {
@@ -327,27 +335,24 @@ export class GameManager extends EventEmitter {
             return true;
         }
 
+        const { game } = gameInfos;
+        const { gameName } = gameInfos;
         const { instance } = gameInfos;
-        const { config } = gameInfos
+        const { gameData } = gameInfos;
         if (typeof instance.stop === "function") {
-            instance.stop();
-            this.gameInstances.set(botId, { instance: instance, isRunning: false, config: config });
+            await instance.stop();
+            this.gameInstances.set(botId,
+                { game: game, gameName: gameName, instance: undefined, isRunning: false, gameData: gameData }
+            );
 
             this.sendBotInfos(botId);
 
-            this.log.info(`Game ${config.gameName} stopped on bot ${botId}.`);
+            this.log.info(`Game ${gameInfos.game} stopped on bot ${botId}.`);
             return true;
         } else {
-            this.log.warn(`This game ${config.gameName} on bot ${botId} wasn't set to be stopped. Stop the bot to stop the game.`);
+            this.log.warn(`This game ${gameInfos.game} on bot ${botId} wasn't set to be stopped. Stop the bot to stop the game.`);
             return false;
         }
+        // Think about disconnectFromDatabase() for the casino when it will be stoppable.
     }
-
-
-    async restartGame(botId: number = 0) {
-        const game = this.gameInstances.get(botId);
-        await this.stopGame(botId);
-        await this.startGame(botId, game.config);
-    }
-
 }

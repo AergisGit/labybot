@@ -2,9 +2,9 @@ import express, { RequestHandler } from "express";
 import path from 'path';
 import { createServer } from 'http';
 import { setupSocketServer } from './socketServer';
-import { GameManager } from "../core/gameManager";
+import { GameManager } from "../managers/gameManager";
 import { apiRoutes } from './routes';
-import { Logger } from "../logger";
+import { Logger } from "../utils/logger";
 
 export class AdminServer {
   public log: Logger;

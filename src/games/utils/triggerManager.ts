@@ -1,6 +1,6 @@
 // triggerManager.ts
 
-import { logger } from "../../logger";
+import { logger } from "../../utils/logger";
 import { CoordObject } from '../../apiConnector';
 import { MapRegion } from "../../apiMap";
 

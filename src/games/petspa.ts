@@ -19,7 +19,7 @@ import { API_Character } from "../apiCharacter";
 import { AssetGet, BC_AppearanceItem } from "../item";
 import { CommandParser } from "../commandParser";
 import { BC_Server_ChatRoomMessage } from "../logicEvent";
-import { remainingTimeString, wait } from "../util/time";
+import { remainingTimeString, wait } from "../utils/time";
 
 const RECEPTION_AREA: MapRegion = {
     TopLeft: { X: 13, Y: 11 },

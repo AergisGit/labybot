@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-import { logger } from './logger';
+import { logger } from './utils/logger';
 import { API_Character } from "./apiCharacter";
 import { API_Connector, MessageEvent } from "./apiConnector";
 import { BC_Server_ChatRoomMessage, TBeepType } from "./logicEvent";
@@ -46,6 +46,11 @@ export class CommandParser {
         }
     }
 
+    public clear(): void {
+        this.commands.clear();
+        logger.info("All commands have been unregistered.");
+    }
+    
     private onMessage = (ev: MessageEvent) => {
         // trim any leading or trailing parentheses from the message
         const msg = ev.message.Content.replace(/^\(+/, "").replace(/\)+$/, "");

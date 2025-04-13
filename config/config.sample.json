@@ -2,7 +2,13 @@
     "user": "your_bot_user_name",
     "password": "your_bot_password",
     "env": "live",
-    "game": "dare",
+
+    "game": "laby",
+    "gameName": "dustyLabyrinth",
+
+    "mongo_uri": "mongodb://localhost:27017",
+    "mongo_db": "your_mongo_db",
+    
     "superusers": [],
     "room": {
         "Name": "Your room name",

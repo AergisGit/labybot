@@ -1,0 +1,19 @@
+{
+    "maps": [
+        {
+            "name": "Sophie's home",
+            "description": "Un appartement calme",
+            "map": "N4IgKgngDgpiBcICCAbA7gQwgZxAGnAEsUZdEA7Sq6m2u+6wLBBmXW32POvufe/+B/QJfAI0WPGjB7IQA85s+QBDlihTKFS2a7StVz1m1uP1DdswAvg5jYeZr96szMvWbdk4/k3bYkxMlehAGDg7QATcIjwl0MgkLFIyOjNWMChBMT/V2DU9IihSiSpcVyogq9GNJLEsoCq6vJC8psGFta29o7WgGue3r7+/oAH4YHRsfGJyYGR3uHBvrmFmZ7F2eWpjc2t6fWNzv2Dw46mk9Oz84vLq+ub27u2QDAQe+evI7fyfBAAeQAjACsYABjAAuZBAdQhkKh0JhsLh8IRiPhgBnoUKAA+hAGvQoVRSMigBBAQBwgIAEEFCgD1AABfpNCgDZAcIAGLJzFxEMAC0As5npQBD0IAmmEAVfBY0IAdI50MFDIiwpFJWFgBpAcKAJCApZFAAEwCUAODCAavgMYAr6HCvJFADToYABQA5ACXIhjeZylQkADsRQBPwAAgkpa20JQBjQN6PRiNelnYHHUrAD/A4RJdUAJCAeqqADhAIYB6+ETuX96QFCSTUMALMDQwAn4IAqYBjoXIoWwRfLFcrVer1cAEsA1huNpvNluttvtjudrsekAAXyAA="
+        },
+        {
+            "name": "Sophie's home with bat cave",
+            "description": "Chez sophie, mais avec la batcave en plus",
+            "map": "N4IgKgngDgpiBcICCAbA7gQwgZxAGnAEsUZdEA7SqywLBA76G6rGWHbWO3brzO//GPAcI68hIvoEvgaTNlyZE1pIAeqlWoAhWjeuWTFLXUe07Veg4zlnJJlYAXwO/ov1dZvbeUOnzmq+se1HzorNXlpIOCAYOijABN4hPjvZ0loyLlExMAL4AjUmMzE2Vy0yQKEyUpkiwyy2IryKoNS2sLK3JbWhoju+h4+/oHBoeGRkYBricmp6emAB/mZxaXlldWZhcn52amtnY2J3c39tZPTs/Xjk9Hrm9u78R7Hp+eX17f3j8+vp8AwEG//oL3IFUfAgADyACMAFYwADGABcyCAOh1AAKA6NigAPoQBX0LFADgwgDXoFHE2ro1HxABBADSSbS6fSGQVAHQgjPpgBnoLGAFvhYhzWQVACCAgDhAQAIILFAHqAAC+xbFAGyA8TlYrofJJgAWgFXK2qAIehAE0wgCr4ImxADpGvphoAMYljSaOsbADSA8UASEDWgqAAJhMnjANXwBNxsV1zppJPJJoAS4kCbrNc6ygAdhKAJ+AKbUvVGyoAxoHTKfiBI9BQpebjKcAP8DxUUdQAkIJmOoAOEBRgHr4OtlHMFA2ZeskwAswLTACfggCpgSvxcixbD9kejsfjieTgqACWAp3P5wvF0vlyvV2v1xvKyAAL5AA="
+        },
+        {
+            "name": "Test Labyrinth 01",
+            "description": "Laybyrinth test map",
+            "map": "N4IgKgngDgpiBcICCAbA7gQwgZxAGnAEsUZdFAsEEquptrvpoDtnnyAJjzr7j9n9vp3ItW9NgPEMJNcSMaDeQ8T2UKlvOTK2rKqvQN3CRgk0unLFErnUkGqtwzvvbTa/issWz+x1ur6HcytvIIC1VydbKNCbZ189a25gty8gw387WmjA9ODFRIKkr3cXXMDyuLsPdRVTDxMyqucnDN9HT2SQ1O6GmMaMn0zmuu7PfO9E2P6h6faJnqLx80tW6QGmxuySmuWizsrc1alBhMXi+eqwyLWmsPjJhfCuvr8ZjdvtQrG9s9711ZaaUqP3GXwuZnW10BFUhTxi5wiJQBN2yQKyYPcHQRmhhryyw3EABDCSwUilCvsiSTWNDhvjccTSaN5uTsSJ8CAAPIAIwAVjAAMYAFzIIAAJhLJVLpTLZXLpYAGIAAQYAIICVABj5VrtdKAGk6g2GiXYMUAdKNFqlgBPwS2262AJCBAJBA9sAEsB222AFvh3d6fb6/f6A4Gg8GQ6Gw+GI5Go9GY7G4/GE4mk8mU6m0+nAE/A6ezFsAODCANehAK3wgCvoOPmiOAMaAKxKAEuRpVKxhipU5wNWq0gAC+QA==="
+        }
+    ]
+}

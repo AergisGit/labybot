@@ -15,7 +15,7 @@
 import { readFile, writeFile } from "fs/promises";
 import { API_Connector } from "../apiConnector";
 import { CommandParser } from "../commandParser";
-import { wait } from "../util/time";
+import { wait } from "../utils/time";
 import { API_Character } from "../apiCharacter";
 import { BC_Server_ChatRoomMessage } from "../logicEvent";
 

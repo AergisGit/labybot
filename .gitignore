@@ -3,7 +3,6 @@ out
 package-lock.json
 config/config.json
 config/config_*.json
-resources/games/laby/yumi*
-resources/test.json
+config/games/laby/yumi*
 local/
 .vscode

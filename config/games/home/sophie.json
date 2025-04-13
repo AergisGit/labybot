@@ -1,0 +1,34 @@
+{
+    "room": {
+        "Name": "Chez Sophie",
+        "Description": "Un appartement calme",
+        "Background": "Bedroom",
+        "Private": true,
+        "Locked": false,
+        "Space": "X",
+        "Ban": [],
+        "Limit": 10,
+        "BlockCategory": [],
+        "Game": "",
+        "Language": "EN",
+        "Admin": [197228,189644,186990]
+    },
+    "map": "N4IgKgngDgpiBcICCAbA7gQwgZxAGnAEsUZdEA7Sq6m2u+6wLBBmXW32POvufe/+B/QJfAI0WPGjB7IQA85s+QBDlihTKFS2a7StVz1m1uP1DdswAvg5jYeZr96szMvWbdk4/k3bYkxMlehAGDg7QATcIjwl0MgkLFIyOjNWMChBMT/V2DU9IihSiSpcVyogq9GNJLEsoCq6vJC8psGFta29o7WgGue3r7+/oAH4YHRsfGJyYGR3uHBvrmFmZ7F2eWpjc2t6fWNzv2Dw46mk9Oz84vLq+ub27u2QDAQe+evI7fyfBAAeQAjACsYABjAAuZBAdQhkKh0JhsLh8IRiPhgBnoUKAA+hAGvQoVRSMigBBAQBwgIAEEFCgD1AABfpNCgDZAcIAGLJzFxEMAC0As5npQBD0IAmmEAVfBY0IAdI50MFDIiwpFJWFgBpAcKAJCApZFAAEwCUAODCAavgMYAr6HCvJFADToYABQA5ACXIhjeZylQkADsRQBPwAAgkpa20JQBjQN6PRiNelnYHHUrAD/A4RJdUAJCAeqqADhAIYB6+ETuX96QFCSTUMALMDQwAn4IAqYBjoXIoWwRfLFcrVer1cAEsA1huNpvNluttvtjudrsekAAXyAA=",
+    "maps": [
+        {"name":"batCave", "map": "N4IgKgngDgpiBcICCAbA7gQwgZxAGnAEsUZdEA7SqywLBA76G6rGWHbWO3brzO//GPAcI68hIvoEvgaTNlyZE1pIAeqlWoAhWjeuWTFLXUe07Veg4zlnJJlYAXwO/ov1dZvbeUOnzmq+se1HzorNXlpIOCAYOijABN4hPjvZ0loyLlExMAL4AjUmMzE2Vy0yQKEyUpkiwyy2IryKoNS2sLK3JbWhoju+h4+/oHBoeGRkYBricmp6emAB/mZxaXlldWZhcn52amtnY2J3c39tZPTs/Xjk9Hrm9u78R7Hp+eX17f3j8+vp8AwEG//oL3IFUfAgADyACMAFYwADGABcyCAOh1AAKA6NigAPoQBX0LFADgwgDXoFHE2ro1HxABBADSSbS6fSGQVAHQgjPpgBnoLGAFvhYhzWQVACCAgDhAQAIILFAHqAAC+xbFAGyA8TlYrofJJgAWgFXK2qAIehAE0wgCr4ImxADpGvphoAMYljSaOsbADSA8UASEDWgqAAJhMnjANXwBNxsV1zppJPJJoAS4kCbrNc6ygAdhKAJ+AKbUvVGyoAxoHTKfiBI9BQpebjKcAP8DxUUdQAkIJmOoAOEBRgHr4OtlHMFA2ZeskwAswLTACfggCpgSvxcixbD9kejsfjieTgqACWAp3P5wvF0vlyvV2v1xvKyAAL5AA=" }
+    ],
+    "botPosition": { "X": 15, "Y": 11 },
+    "botDescription":[
+        "Welcome to Sophie's home!",
+        "",
+        "Make yourself at home gentle guest. People might speak french arround here, please don't mind them",
+        "And please beware the automated traps here and there.",
+        "",
+        "Command:",
+        "/bot free - [Admins only] Immediately removes any restraints added.",
+        "",
+        "This bot runs on a version of Ropeybot customized by Sophie (186990).",
+        "Ropeybot code at https://github.com/FriendsOfBC/ropeybot"
+    ],
+    "triggersData":[]
+}

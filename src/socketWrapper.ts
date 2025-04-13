@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-import { logger } from './logger';
+import { logger } from './utils/logger';
 import { Socket } from "socket.io-client";
 
 // Don't send more than NUM_MESSAGES messages in TIME_INTERVAL milliseconds

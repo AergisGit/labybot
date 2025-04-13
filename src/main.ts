@@ -12,9 +12,9 @@
  * limitations under the License.
  */
 
-import { Logger, logger } from './logger';
+import { Logger, logger } from './utils/logger';
 //import { startBot } from "./bot";
-import { GameManager } from './core/gameManager'
+import { GameManager } from './managers/gameManager'
 import { AdminServer } from './admin/adminServer';
 
 

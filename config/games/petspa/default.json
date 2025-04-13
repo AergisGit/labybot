@@ -1,0 +1,16 @@
+{
+    "room": {
+        "Name": "The Ropey Bot Pet Spa !",
+        "Description": "This is an example to show how to use the ropeybot API to create a simple game.",
+        "Background": "HouseInterior3",
+        "Private": true,
+        "Locked": false,
+        "Space": "X",
+        "Ban": [],
+        "Limit": 10,
+        "BlockCategory": [],
+        "Game": "",
+        "Language": "EN",
+        "Admin": [197228, 189644, 186990]
+    }
+}

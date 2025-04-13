@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-import { logger } from './logger';
+import { logger } from './utils/logger';
 import { API_Chatroom } from "./apiChatroom";
 import { API_Connector, CoordObject, TellType } from "./apiConnector";
 import { AppearanceType } from "./appearance";

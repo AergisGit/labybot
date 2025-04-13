@@ -67,14 +67,14 @@ The bot can either be run locally or via the Docker image.
   docker build -t labybot:0.0.6 .
 
 * Run the bot 
-    + setup in  in the config file you just made
-    + the resources (for Laby) and the save volume (for Laby Hall of Fame)
+    + setup in the config directory with the config.json you just made
+    + the save volume (for Laby Hall of Fame)
     + the port for the React Administration Web page
 + Using the docker image through a command line:
 
-  docker run --rm -it -v %cd%\config.json:/bot/config.json -v %cd%\resources:/bot/resources -v labybot_data:/bot/save -p 3000:3000 labybot:0.0.6
+  docker run --rm -it -v %cd%\config:/bot/config -v labybot_data:/bot/save -p 3000:3000 labybot:0.0.6
 
-+ Or using the docker-compose file (check the config file name according to yours):
++ Or using the docker-compose file:
   docker compose up
 
 

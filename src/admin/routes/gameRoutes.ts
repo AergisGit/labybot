@@ -1,16 +1,16 @@
 import { Router } from 'express';
-import { GameManager } from '../../core/gameManager';
+import { GameManager } from '../../managers/gameManager';
 
 export const gameRoutes = (gameManager: GameManager) => {
     const router = Router();
 
-    router.get('/:botId/status', (req, res) => {
+    router.get('/:botId/data', (req, res) => {
         const botId = parseInt(req.params.botId);
         if (isNaN(botId)) {
             res.status(400).send("Invalid botId");
             return;
         }
-        res.json(gameManager.getGameConfig(botId));
+        res.json(gameManager.getGameData(botId));
     });
 
     router.post('/:botId/start', async (req, res) => {

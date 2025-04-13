@@ -12,10 +12,10 @@
  * limitations under the License.
  */
 
-import { logger } from './logger';
+import { logger } from './utils/logger';
 import { API_Character, API_Character_Data } from "./apiCharacter";
 import { isBind, isBody, isClothing, isCosplay } from "./assetHelpers";
-import { wait } from "./util/time";
+import { wait } from "./utils/time";
 import { API_AppearanceItem, BC_AppearanceItem } from "./item";
 import { decompressFromBase64, compressToBase64 } from "lz-string";
 

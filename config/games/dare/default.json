@@ -1,0 +1,16 @@
+{
+    "room": {
+        "Name": "My Dare room",
+        "Description": "Prepare dares together, and draw them during the game!",
+        "Background": "HouseInterior3",
+        "Private": true,
+        "Locked": false,
+        "Space": "X",
+        "Ban": [],
+        "Limit": 10,
+        "BlockCategory": [],
+        "Game": "",
+        "Language": "EN",
+        "Admin": [197228, 189644, 186990]
+    }
+}

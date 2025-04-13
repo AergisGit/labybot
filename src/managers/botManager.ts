@@ -13,10 +13,10 @@
  */
 
 import { compressToBase64 } from "lz-string";
-import { Logger } from '../logger';
+import { Logger } from '../utils/logger';
 import { API_Connector } from "../apiConnector";
 import { API_Chatroom_Data } from "../apiChatroom";
-import { ConfigFile } from "../config";
+import { ConfigFile } from "./config/config";
 import { Db, MongoClient } from "mongodb";
 
 
@@ -45,19 +45,6 @@ export class BotManager {
             throw new Error("Invalid environment configuration");
         }
 
-        if (this.config.mongo_uri && this.config.mongo_db) {
-            this.mongoClient = new MongoClient(this.config.mongo_uri, {
-                ssl: false,
-                tls: false,
-            });
-            this.log.log("Connecting to mongo... On Url: ",  this.config.mongo_uri);
-            await this.mongoClient.connect();
-            this.log.log("...connected! Accessing database: ", this.config.mongo_db);
-            this.db = this.mongoClient.db(this.config.mongo_db);
-            await this.db.command({ ping: 1 });
-            this.log.log("...ping successful!");
-        }
-
         this.connector = new API_Connector(
             serverUrl,
             this.config.user,
@@ -79,6 +66,37 @@ export class BotManager {
             this.connector = undefined;
         }
 
+        await this.disconnectFromDatabase();
+
+        this.log.info("Bot stopped successfully.");
+
+    }
+
+
+    public getConnector(): API_Connector {
+        return this.connector;
+    }
+
+    public getDB(): Db {
+        return this.db;
+    }
+
+    public async connectToDatabase(): Promise<void> {
+        if (this.config.mongo_uri && this.config.mongo_db && this.db === undefined) {
+            this.mongoClient = new MongoClient(this.config.mongo_uri, {
+                ssl: false,
+                tls: false,
+            });
+            this.log.log("Connecting to mongo... On Url: ", this.config.mongo_uri);
+            await this.mongoClient.connect();
+            this.log.log("...connected! Accessing database: ", this.config.mongo_db);
+            this.db = this.mongoClient.db(this.config.mongo_db);
+            await this.db.command({ ping: 1 });
+            this.log.log("...ping successful!");
+        }
+    }
+
+    public async disconnectFromDatabase(): Promise<void> {
         // Close the database connection
         if (this.mongoClient) {
             this.log.info("Closing the database connection...");
@@ -86,24 +104,17 @@ export class BotManager {
             this.mongoClient = undefined;
             this.db = undefined;
         }
-
-        this.log.info("Bot stopped successfully.");
-
-    }
-
-    public getConnector(): API_Connector {
-        return this.connector;
-    }
-    
-    public getDB(): Db {
-        return this.db;
     }
 
     public getRoomInfos() {
         let playerCount: number = this.connector?.chatRoom?.charactersCount;
-        let roomMap: string = compressToBase64(JSON.stringify(this.connector?.chatRoom?.roomData?.MapData));
-        let roomData: API_Chatroom_Data = JSON.parse(JSON.stringify(this.connector?.chatRoom?.roomData));
-        
+        let roomMap: string = this.connector?.chatRoom?.roomData?.MapData
+            ? compressToBase64(JSON.stringify(this.connector.chatRoom.roomData.MapData))
+            : undefined;
+        let roomData: API_Chatroom_Data = this.connector?.chatRoom?.roomData
+            ? JSON.parse(JSON.stringify(this.connector.chatRoom.roomData))
+            : undefined;
+
         return {
             playerCount: playerCount || 0,
             roomMap: roomMap || undefined,
@@ -113,7 +124,7 @@ export class BotManager {
 
     public getBotDetails() {
         let botName: string = this.connector?.Player?.Name;
-        let botNumber: number= this.connector?.Player?.MemberNumber;
+        let botNumber: number = this.connector?.Player?.MemberNumber;
         return {
             botName: botName || null,
             botNumber: botNumber || null,

@@ -1,11 +1,23 @@
-services:
+services:  
+  #mongodb:
+  #  image: mongo:latest
+  #  container_name: mongodb-casino
+  #  command: --noauth
+  #  ports:
+  #    - "27017:27017"
+  #  logging:
+  #    driver: "none"
+  #  volumes:
+  #    - mongodb_data:/data/db
+
   labybot:
+    #depends_on:
+    #  - mongodb
     image: labybot:2.0.0
     container_name: labybot
     pull_policy: never # Force using local image
     volumes:
       - ./config:/bot/config
-      - ./resources:/bot/resources
       - labybot_data:/bot/save
     ports:
       - "3000:3000"
@@ -15,3 +27,5 @@ services:
 volumes:
   labybot_data:
     name: labybot_data
+  #mongodb_data:
+  #  name: mongodb-casino-data

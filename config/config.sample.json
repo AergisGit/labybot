@@ -3,11 +3,11 @@
     "password": "your_bot_password",
     "env": "live",
 
-    "game": "laby",
-    "gameName": "dustyLabyrinth",
+    "game": "casino",
+    "gameName": "dragon",
 
-    "mongo_uri": "mongodb://localhost:27017",
-    "mongo_db": "your_mongo_db",
+    "mongo_uri": "mongodb://host.docker.internal:27017",
+    "mongo_db": "casino",
     
     "superusers": [],
     "room": {

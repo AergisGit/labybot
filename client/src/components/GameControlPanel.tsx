@@ -9,7 +9,7 @@ const GameControlPanel: React.FC = () => {
 
     // Is game running right now
     const isGameRunning = data?.botInfos?.gameRunning || false;
-    const gameStatus = `Jeu (${data?.botInfos?.game || "N/A"}) : ${data?.botInfos?.gameRunning ? "Actif" : "Inactif"}`;
+    const gameStatus = `${data?.botInfos?.game} - ${data?.botInfos?.gameName || "default"} : ${data?.botInfos?.gameRunning ? "Actif" : "Inactif"}`;
 
     const handleStartGame = () => {
         socket?.emit("startGame", { botId: 0 });

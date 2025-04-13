@@ -36,7 +36,7 @@ async function main() {
     // Start GameManager
     log.info('Sarting GameManager...');
     const gameManager = new GameManager();
-    await gameManager.initialize();  // Charger la config et démarrer le bot
+    await gameManager.initialize();
     log.info('GameManager started');
 
     // Start AdminServer
@@ -45,7 +45,8 @@ async function main() {
     adminServer.startAdminServer();
     log.info('AdminServer started');
 
-
+    // Start the default game configuration
+    await gameManager.startBot(0);
 
     process.on("SIGINT", () => {
         log.info("SIGINT received, exiting");

@@ -32,10 +32,6 @@ export class GameManager extends EventEmitter {
         // Chargement de la configuration depuis le fichier de configuration
         this.config = await getDefaultConfig();  // Charge la config du fichier
         this.log.info("Config initialized: ", this.getConfig());
-
-        await this.startBot(0); // par défaut un seul bot
-        //await this.startGame(0, this.config);
-
     }
 
     // Emitters
@@ -266,6 +262,10 @@ export class GameManager extends EventEmitter {
                 throw new Error(`Game ${game} cannot start, bot ${botId} is not connected.`);
             }
 
+            let gameInstance: any;
+            const gameData = await getGameData(game, gameName);
+            const connector = botInstance.getConnector();
+
             if (this.gameInstances.has(botId)) {
                 const gameInfos = this.gameInstances.get(botId)
                 if (gameInfos.isRunning) {
@@ -274,14 +274,17 @@ export class GameManager extends EventEmitter {
                         throw new Error(`The game on bot ${botId} wasn't set to be stopped. Stop the bot to stop the game.`);
                     }
                 }
+                // maybe we are starting with a different game and game name
                 game = game || gameInfos.game;
                 gameName = gameName || gameInfos.gameName || "default";
+            } else {
+                // Set gameInstance infos so that even  if the game can't launch, we still now what game we're at
+                this.gameInstances.set(botId,
+                    { game: game, gameName: gameName, instance: undefined, isRunning: false, gameData: gameData }
+                );
             }
 
 
-            let gameInstance: any;
-            const gameData = await getGameData(game, gameName);
-            const connector = botInstance.getConnector();
             switch (game) {
 
                 case "dare":
@@ -289,8 +292,13 @@ export class GameManager extends EventEmitter {
                     break;
 
                 case "casino":
-                    await botInstance.connectToDatabase();
-                    let db = botInstance.getDB();
+                    let db: any;
+                    try {
+                        await botInstance.connectToDatabase();
+                        db = botInstance.getDB();
+                    } catch (e) {
+                        throw new Error("Can't launch the casino, Failed to connect to the database:", e);
+                    }
                     gameInstance = new Casino(connector, db, gameData.casino);
                     break;
 
@@ -330,7 +338,7 @@ export class GameManager extends EventEmitter {
 
     public async stopGame(botId: number = 0): Promise<boolean> {
         const gameInfos = this.gameInstances.get(botId);
-        if (!gameInfos) {
+        if (!gameInfos.isRunning) {
             this.log.warn(`No game is running on bot ${botId}.`);
             return true;
         }

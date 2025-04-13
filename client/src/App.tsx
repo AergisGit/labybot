@@ -57,9 +57,9 @@ const App: React.FC = () => {
 
         if (data.botInfos?.roomData) {
             setBotRoomInfos(
-                `Salle : ${data.botInfos.roomData.Name || "N/A"}\n(Zone : ${data.botInfos.roomData.Space}, Type : ${data.botInfos.roomData.MapData.Type}) \
-        \n\nPrivate : ${data.botInfos.roomData.Private || "N/A"} | Locked : ${data.botInfos.roomData.Locked}\
-        \nVisibility : ${data.botInfos.roomData.Visibility.join("/")} | Access : ${data.botInfos.roomData.Access.join("/")}\
+                `Salle : ${data.botInfos.roomData.Name || "Unknown"}\n(Zone : ${data.botInfos.roomData.Space}, Type : ${data.botInfos.roomData.MapData?.Type}) \
+        \n\nPrivate : ${data.botInfos.roomData.Private || "Unknown"} | Locked : ${data.botInfos.roomData.Locked || "Unknown"}\
+        \nVisibility : ${data.botInfos.roomData.Visibility?.join("/")} | Access : ${data.botInfos.roomData.Access?.join("/")}\
         \n\n Admins : [${data.botInfos.roomData.Admin}]`,
             );
 

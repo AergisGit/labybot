@@ -1,4 +1,6 @@
 {
+    "game": "petspa",
+    "gameName": "default",
     "room": {
         "Name": "The Ropey Bot Pet Spa !",
         "Description": "This is an example to show how to use the ropeybot API to create a simple game.",

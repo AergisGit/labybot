@@ -2,9 +2,9 @@ import { Socket } from 'socket.io';
 import { GameManager } from '../../managers/gameManager';
 
 export const registerGameEvents = (socket: Socket, gameManager: GameManager) => {
-    socket.on('getGameData', () => {
-        const data = gameManager.getGameData(0); // Exemple avec botId = 0
-        socket.emit('getGameData', data);
+    socket.on('getGameInfos', () => {
+        const data = gameManager.getGameInfos(0); // Exemple avec botId = 0
+        socket.emit('getGameInfos', data);
     });
 
     socket.on('startGame', async ({ botId, game, gameName }: { botId: number, game?: string, gameName?: string }) => {

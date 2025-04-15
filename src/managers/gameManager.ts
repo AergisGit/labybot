@@ -9,14 +9,16 @@ import { Home } from "../games/home";
 import { Laby } from "../games/laby";
 import { Casino } from "../games/casino";
 import { EventEmitter } from 'stream';
-import { GameData, getGameData } from './config/gameData';
+import { GameInfosData, GameInfos } from './config/gameInfos';
 
 export class GameManager extends EventEmitter {
-    private gameInstances: Map<number, { game: string, gameName?: string, instance: any, isRunning: boolean, gameData: GameData }>; // Gère les jeux actifs et leurs bots
+    private gameInstances: Map<number, { game: string, gameName?: string, instance: any, isRunning: boolean, gameInfos: GameInfosData }>; // Gère les jeux actifs et leurs bots
     private botInstances: Map<number, BotManager>; // Gère plusieurs bots via un ID
     private isRunning: Map<number, boolean>; // Suivi de l'état de chaque bot
+    private GameInfos: GameInfos;
     private config: ConfigFile;
     public log: Logger;
+
 
     constructor() {
         super(); // init the EventEmitter part
@@ -31,6 +33,8 @@ export class GameManager extends EventEmitter {
     public async initialize(): Promise<void> {
         // Chargement de la configuration depuis le fichier de configuration
         this.config = await getDefaultConfig();  // Charge la config du fichier
+        this.GameInfos = new GameInfos(this.config.game, this.config.gameName);
+        this.GameInfos.init();
         this.log.info("Config initialized: ", this.getConfig());
     }
 
@@ -193,11 +197,11 @@ export class GameManager extends EventEmitter {
     }
 
     public getGameStatus(botId: number = 0) {
-        const gameInfos = this.gameInstances.get(botId);
+        const gameInstance = this.gameInstances.get(botId);
         return {
-            game: gameInfos?.game,
-            gameName: gameInfos?.gameName,
-            gameRunning: gameInfos?.isRunning
+            game: gameInstance?.game,
+            gameName: gameInstance?.gameName,
+            gameRunning: gameInstance?.isRunning
         };
     }
 
@@ -224,17 +228,16 @@ export class GameManager extends EventEmitter {
         };
     }
 
-    public async getGameData(botId: number = 0): Promise<GameData | undefined> {
-        const gameInfos = this.gameInstances.get(botId);
-        if (!gameInfos) {
+    public async getGameInfos(botId: number = 0): Promise<GameInfosData | undefined> {
+        const gameInstance = this.gameInstances.get(botId);
+        if (!gameInstance) {
             this.log.warn(`No game is running on bot ${botId}.`);
             return undefined;
         }
-        const { game, gameName } = gameInfos;
-        return await getGameData(game, gameName);
+        return gameInstance.gameInfos;
     }
 
-    public updateGameData(newConfig: Partial<ConfigFile>, botId: number = 0) {
+    public updateGameInfos(newConfig: Partial<ConfigFile>, botId: number = 0) {
         this.config = { ...this.config, ...newConfig };
         this.log.info(`Updated config for bot ${botId}:`, this.getConfig());
     }
@@ -263,24 +266,24 @@ export class GameManager extends EventEmitter {
             }
 
             let gameInstance: any;
-            const gameData = await getGameData(game, gameName);
             const connector = botInstance.getConnector();
+            const gameInfos = this.GameInfos.getGameInfos();
 
             if (this.gameInstances.has(botId)) {
-                const gameInfos = this.gameInstances.get(botId)
-                if (gameInfos.isRunning) {
+                const gameInstance = this.gameInstances.get(botId)
+                if (gameInstance.isRunning) {
                     this.log.warn(`A game is already running on bot ${botId}. Stopping it first.`);
                     if (!await this.stopGame(botId)) {
                         throw new Error(`The game on bot ${botId} wasn't set to be stopped. Stop the bot to stop the game.`);
                     }
                 }
                 // maybe we are starting with a different game and game name
-                game = game || gameInfos.game;
-                gameName = gameName || gameInfos.gameName || "default";
+                game = game || gameInstance.game;
+                gameName = gameName || gameInstance.gameName || "default";
             } else {
                 // Set gameInstance infos so that even  if the game can't launch, we still now what game we're at
                 this.gameInstances.set(botId,
-                    { game: game, gameName: gameName, instance: undefined, isRunning: false, gameData: gameData }
+                    { game: game, gameName: gameName, instance: undefined, isRunning: false, gameInfos: gameInfos }
                 );
             }
 
@@ -294,12 +297,16 @@ export class GameManager extends EventEmitter {
                 case "casino":
                     let db: any;
                     try {
-                        await botInstance.connectToDatabase();
+                        this.log.info("Connecting to the database...");
+                        this.log.debug("mongo_uri:", this.config.mongo_uri);
+                        this.log.debug("mongo_db: ", gameInfos.mongo_db);
+                        await botInstance.connectToDatabase(gameInfos.mongo_db);
                         db = botInstance.getDB();
                     } catch (e) {
                         throw new Error("Can't launch the casino, Failed to connect to the database:", e);
                     }
-                    gameInstance = new Casino(connector, db, gameData.casino);
+                    gameInstance = new Casino(connector, db, gameInfos.casino);
+                    await gameInstance.init();
                     break;
 
                 case "petspa":
@@ -313,7 +320,7 @@ export class GameManager extends EventEmitter {
                     break;
 
                 case "laby":
-                    gameInstance = new Laby(connector, this.config.superusers, gameName);
+                    gameInstance = new Laby(connector, gameInfos, this.config.superusers);
                     await gameInstance.init();
                     break;
 
@@ -322,7 +329,7 @@ export class GameManager extends EventEmitter {
             }
 
             this.gameInstances.set(botId,
-                { game: game, gameName: gameName, instance: gameInstance, isRunning: true, gameData: gameData }
+                { game: game, gameName: gameName, instance: gameInstance, isRunning: true, gameInfos: gameInfos }
             );
 
             this.sendBotInfos(botId);
@@ -337,30 +344,38 @@ export class GameManager extends EventEmitter {
     }
 
     public async stopGame(botId: number = 0): Promise<boolean> {
-        const gameInfos = this.gameInstances.get(botId);
-        if (!gameInfos.isRunning) {
+        const gameInstance = this.gameInstances.get(botId);
+        if (!gameInstance.isRunning) {
             this.log.warn(`No game is running on bot ${botId}.`);
             return true;
         }
 
-        const { game } = gameInfos;
-        const { gameName } = gameInfos;
-        const { instance } = gameInfos;
-        const { gameData } = gameInfos;
-        if (typeof instance.stop === "function") {
-            await instance.stop();
-            this.gameInstances.set(botId,
-                { game: game, gameName: gameName, instance: undefined, isRunning: false, gameData: gameData }
-            );
+        const { game } = gameInstance;
+        const { gameName } = gameInstance;
+        const { instance } = gameInstance;
+        const { gameInfos } = gameInstance;
 
+        if (typeof instance.stop === "function") {
+            
+            // Stop the game
+            await instance.stop();
+            // If a db is connected, stop it too
+            const botInstance = this.botInstances.get(botId)
+            if ( botInstance.getDB() !== undefined ) {
+                await botInstance.disconnectFromDatabase();
+            }
+            
+            this.gameInstances.set(botId,
+                { game: game, gameName: gameName, instance: undefined, isRunning: false, gameInfos: gameInfos }
+            );
+            
             this.sendBotInfos(botId);
 
-            this.log.info(`Game ${gameInfos.game} stopped on bot ${botId}.`);
+            this.log.info(`Game ${gameInstance.game} stopped on bot ${botId}.`);
             return true;
         } else {
-            this.log.warn(`This game ${gameInfos.game} on bot ${botId} wasn't set to be stopped. Stop the bot to stop the game.`);
+            this.log.warn(`This game ${gameInstance.game} on bot ${botId} wasn't set to be stopped. Stop the bot to stop the game.`);
             return false;
         }
-        // Think about disconnectFromDatabase() for the casino when it will be stoppable.
     }
 }

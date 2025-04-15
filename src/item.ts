@@ -174,7 +174,7 @@ export class API_AppearanceItem {
         
         // check if this object already has a lock
         //
-        logger.debug("Lock - this.data.Property.LockedBy:", this.data.Property.LockedBy);
+        logger.debug("Lock - this.data.Property.LockedBy:", this.data?.Property?.LockedBy);
         
 
 

@@ -50,6 +50,12 @@ export class CommandParser {
         this.commands.clear();
         logger.info("All commands have been unregistered.");
     }
+
+    public stop(): void {
+        this.clear();
+        this.conn.off("Message", this.onMessage);
+        logger.info("Command parser stopped.");
+    }
     
     private onMessage = (ev: MessageEvent) => {
         // trim any leading or trailing parentheses from the message

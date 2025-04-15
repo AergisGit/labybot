@@ -25,7 +25,7 @@ import { formatDuration, wait } from "../utils/time";
 import { Logger } from '../utils/logger';
 import { perf } from '../utils/perf';
 import { TriggerDef, TriggerManager } from "./utils/triggerManager";
-import { GameData, ResourceLoader } from "../managers/config/gameData";
+import { GameInfosData, GameInfos } from "../managers/config/gameInfos";
 import * as fs from 'fs'; // for the winners and challengers list
 
 const SAVEFILE_PATH = "/bot/save/";
@@ -50,32 +50,12 @@ const bondageItemGroups = ['ItemAddon', 'ItemArms', 'ItemBoots', 'ItemBreast', '
 
 
 export class Laby {
-
+    private conn: API_Connector
     public log: Logger;
+    private gameInfos: GameInfosData;
+    private superusers: number[]
     private triggerManager: TriggerManager;
-    private gameData: GameData;
-    private map: string = "";
-    private botPosition: CoordObject = { "X": 0, "Y": 0 };
-    private triggersData: TriggerDef[] = [];
     private saveFileName: string = "save_laby_[gameName].json";
-
-    // variable contenant la description du bot pour sa bio
-    private botDescription: string[] = [
-        "Welcome to this Labyrinth!",
-        "",
-        "Beware ot its traps, they are ",
-        "",
-        "",
-        "Commands:",
-        "",
-        "/bot fame - Gives you the time spent by our best challengers!",
-        "/bot who - Who is challenging this labyrinth?",
-        "/bot time - How long you've been in the Labyrinth",
-        "",
-        "The current layout is designed by Yumi (189644).",
-        "This bot runs on a version of Ropeybot customized by Sophie (186990).",
-        "Ropeybot code at https://github.com/FriendsOfBC/ropeybot",
-    ];
 
     // liste des gens entrés dans le labyrinthe)
     private listChallenger = new Map<number, number>();
@@ -83,11 +63,24 @@ export class Laby {
 
     private commandParser: CommandParser;
 
-    public constructor(private conn: API_Connector, private superusers: number[], private gameName: string) {
+    public constructor(connector: API_Connector, gameInfos: GameInfosData, superusers: number[]) {
+        this.conn = connector;
+        this.gameInfos = gameInfos;
+        this.superusers = superusers;
 
         this.log = new Logger('LABY', 'debug', true, 'green');
         this.commandParser = new CommandParser(this.conn);
+    }
 
+    // Cette fonction d'initalisation est appelée après la constructeur
+    public async init(): Promise<void> {
+        await this.updateGameInfos();
+    }
+
+
+    public async updateGameInfos(gameInfos?: GameInfosData): Promise<void> {
+        this.gameInfos = gameInfos || this.gameInfos;
+        
         // Déclancheurs via commandes texte, reçues apres "/bot "
         this.commandParser.register("fame", this.onCommandWhoWon);
         this.commandParser.register("who", this.onCommandResidents);
@@ -97,17 +90,8 @@ export class Laby {
         this.commandParser.register("reset", this.onCommandReset);
         this.commandParser.register("debug", this.onCommandDebug);
 
-        // Chargement des ressources pour le labyrinthe
-        this.getGameResources(this.gameName);
-
-        // Mise à jour de la description du bot
-        this.conn.setBotDescription(this.botDescription.join("\n"));
-
         // Set save file name
-        this.saveFileName = replacePlaceholdersWithVariables(this.saveFileName, { "gameName": this.gameName });
-
-        // Déclancheur sur reception d'un message peut importe son contenu
-        //conn.on("Message", this.onMessage);
+        this.saveFileName = replacePlaceholdersWithVariables(this.saveFileName, { "gameName": this.gameInfos.gameName });
 
         // triggers sur évenements provenant de API_Connector
         this.conn.on("RoomCreate", this.onChatRoomCreated);
@@ -115,28 +99,20 @@ export class Laby {
 
         // Déclancheurs via arrivée d'un personnage sur des coordonnées ou régions
         this.triggerManager = new TriggerManager(this.conn);
+        this.triggerManager.addTriggersFromData(this.gameInfos.triggersData, this.onWalkTriggerActivated.bind(this));  // Pass callback
 
-        // Add triggers to the map using the TriggerManager
-        this.triggerManager.addTriggersFromData(this.triggersData, this.onWalkTriggerActivated.bind(this));  // Pass callback
-
-
-        // Debug trigger mit manuellement :
-        //this.conn.chatRoom.map.addTileTrigger({"X":8,"Y":27}, this.onCharacterEnterTrolley);
-
-    }
-
-    // Cette fonction d'initalisation est appelée après la constructeur
-    public async init(): Promise<void> {
         // Mise en place initiale de la salle
         await this.setupRoom();
 
+        // Mise à jour de la description du bot
+        this.conn.setBotDescription(this.gameInfos.botDescription.join("\n"));
         // Actions qu'on souhaite que le personnage du bot fasse en entrant dans la pièce
         await this.setupCharacter();
 
         this.loadDataFromFile();
     }
 
-
+    
     public async stop(): Promise<void> {
         this.log.info("Stopping Laby game...");
 
@@ -162,7 +138,6 @@ export class Laby {
         this.log.info("Laby game stopped.");
     }
 
-
     private onChatRoomCreated = async () => {
         await this.setupRoom();
         await this.setupCharacter();
@@ -174,26 +149,16 @@ export class Laby {
 
     private setupRoom = async () => {
         try {
-            this.conn.chatRoom.map.setMapFromString(this.map);
+            this.conn.chatRoom.map.setMapFromString(this.gameInfos.map);
         } catch (e) {
             this.log.error("Map data not loaded", e);
         }
     };
 
     private setupCharacter = async () => {
-        this.conn.moveOnMap(this.botPosition.X, this.botPosition.Y);
+        this.conn.moveOnMap(this.gameInfos.botPosition.X, this.gameInfos.botPosition.Y);
         //this.conn.Player.SetActivePose(["Kneel"]);
     };
-
-    private getGameResources(gameName: string) {
-        const resourceLoader = new ResourceLoader('laby');
-        this.gameData = resourceLoader.loadResource(gameName);
-
-        this.map = this.gameData.map || this.map;
-        this.botPosition = this.gameData.botPosition || this.botPosition;
-        this.botDescription = this.gameData.botDescription || this.botDescription;
-        this.triggersData = this.gameData.triggersData || this.triggersData;
-    }
 
     // Callback function to be invoked when a trigger is activated
     private onWalkTriggerActivated = async (character: API_Character, triggerData: TriggerDef) => {
@@ -639,40 +604,5 @@ export class Laby {
             }
         }
     };
-
-    /*
-    private onCharacterEnterTrolley = async (character: API_Character) => {
-        
-        this.log.debug("trolley - On va mettre le trolley");
-        // Le bot "attache" le trolley qui est de type itemDevices (case en bas à droite sur l'itnerface) au joueur declanchant l'evenement
-        const bondageDevice = character.Appearance.AddItem(AssetGet("ItemDevices", "Trolley"));
-        // Le trolley est un craft spécifique avec une description et un nom
-        this.log.debug("trolley - on va en faire un craft");
-        bondageDevice.SetCraft({ 
-            Name: `Standard Trolley`,
-            Description: `A standard Trolley, used to easily transport bound slaves on wheels.`,
-        });
-        const bondageArms = character.Appearance.AddItem(AssetGet("ItemArms", "HighSecurityStraitJacket"));
-        bondageArms.setProperty("TypeRecord", { c: 1, a : 1, s: 3 });
-        //await wait(500);
-        this.log.debug("trolley - on va fermer");
-        // Le trolley passe en extended type "closed" avec les boucles fermées (ce sont les cases de choix qu'on voit sur l'interface)
-        bondageDevice.Extended.SetType("Closed"); 
-        this.log.debug("trolley - on va changer la diff");
-        bondageDevice.SetDifficulty(20);
-        
-        //await wait(1000);
-        this.log.debug("trolley - on va lock");
-        // mise en place du cadenas avec un TimerPasswordPadlock de 5 minutes (l'unité de temps est en milisecondes)
-        bondageDevice.lock("TimerPasswordPadlock", this.conn.Player.MemberNumber, {
-            Password: "DEBUG",
-            Hint: "Your host.",
-            RemoveItem: true,
-            RemoveTimer: Date.now() + 5 * 60 * 1000,
-            ShowTimer: true,
-            LockSet: true,
-        });
-        this.log.debug("trolley - apres");
-    }*/
 
 }

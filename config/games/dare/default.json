@@ -1,4 +1,6 @@
 {
+    "game": "dare",
+    "gameName": "default",
     "room": {
         "Name": "My Dare room",
         "Description": "Prepare dares together, and draw them during the game!",

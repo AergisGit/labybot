@@ -1,4 +1,6 @@
 {
+    "game": "home",
+    "gameName": "Sophie",
     "room": {
         "Name": "Chez Sophie",
         "Description": "Un appartement calme",

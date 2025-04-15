@@ -1,7 +1,9 @@
 {
+    "game": "casino",
+    "gameName": "dragon",
     "room": {
         "Name": "The Dragon Casino",
-        "Description": "Enter the Dragon Casino! Bot operated. No refunds. No regrets. No shame",
+        "Description": "Enter the Dragon Casino! Bot operated. No refunds. No regrets. No shame.",
         "Background": "Management",
         "Private": true,
         "Locked": false,

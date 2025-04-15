@@ -13,6 +13,7 @@
  */
 
 import { Db } from "mongodb";
+import { Logger } from '../utils/logger';
 import { API_Connector } from "../apiConnector";
 import { CommandParser } from "../commandParser";
 import { RouletteBet, RouletteGame, ROULETTEHELP } from "./casino/roulette";
@@ -86,7 +87,10 @@ export interface CasinoConfig {
     cocktail: string
 }
 
+type rouletteState = "WaitForBet" | "BetsGoing" | "Spinning" | "Resetting" | "Stopped";
+
 export class Casino {
+    public log: Logger;
     private rouletteGame: RouletteGame;
     private commandParser: CommandParser;
     private store: CasinoStore;
@@ -96,12 +100,15 @@ export class Casino {
     private cocktailOfTheDay: Cocktail | undefined;
     private multiplier = 1;
     private lockedItems: Map<number, Map<AssetGroupName, number>> = new Map();
+    private rouletteState: rouletteState = "WaitForBet";
 
     public constructor(
         private conn: API_Connector,
         db: Db,
         config?: CasinoConfig,
     ) {
+        this.log = new Logger('CASI', 'debug', true, 'green');
+        this.log.info("Casino instance created");
         this.rouletteGame = new RouletteGame(conn);
         this.store = new CasinoStore(db);
         this.commandParser = new CommandParser(conn);
@@ -115,6 +122,9 @@ export class Casino {
 
         conn.on("CharacterEntered", this.onCharacterEntered);
         conn.on("Beep", this.onBeep);
+
+
+        this.commandParser.register("free", this.onCommandFree);
 
         this.commandParser.register("bet", this.onCommandBet);
         this.commandParser.register("cancel", this.onCommandCancel);
@@ -154,7 +164,7 @@ export class Casino {
             this.setTextColor("#ffffff");
 
             this.setBio().catch((e) => {
-                console.error("Failed to set bio.", e);
+                this.log.error("Failed to set bio.", e);
             });
 
             this.conn.setScriptPermissions(true, false);
@@ -164,45 +174,72 @@ export class Casino {
         }, 500);
     }
 
+    public async init(): Promise<void> {
+        if (!this.conn.chatRoom || !this.conn.chatRoom.characters) {
+            this.log.error("Chat room or characters list is not available.");
+            return;
+        }
+
+        const characters: API_Character[] = this.conn.chatRoom.characters;
+        for (const character of characters) {
+            try {
+                await this.giveFreeChips(character);
+            } catch (e) {
+                this.log.error(`Failed to give free chips to someone: `, e);
+            }
+        }
+    }
+
     public async stop(): Promise<void> {
-        // Si la roue n'a pas encore tourné
-        if (this.willSpinAt !== undefined) {
-            console.log("Stopping casino: Cancelling bets and preventing new ones.");
 
-            // Empêcher de nouveaux paris
+        if (this.rouletteState === "Spinning") {
+
+            this.log.info("Waiting for the current spin to finish...");
+            this.conn.SendMessage(
+                "Chat",
+                `Deer players, the game will stop after this last spin!`,
+            );
+            // No new bet
             this.commandParser.unregister("bet");
+            // wait for the end of the spin and resolution
+            await new Promise((resolve) => setTimeout(resolve, 12000));
 
-            // Annuler les paris en cours et rembourser les joueurs
-            for (const bet of this.rouletteGame.getBets()) {
-                const player = await this.store.getPlayer(bet.memberNumber);
-                player.credits += bet.stake;
-                await this.store.savePlayer(player);
-                this.conn.SendMessage(
-                    "Chat",
-                    `${bet.memberName}, your bet of ${bet.stake} chips has been refunded.`
-                );
-            }
+        } else {
 
-            // Nettoyer les paris
-            this.rouletteGame.clear();
+            this.log.info("Stopping casino: Cancelling bets and preventing new ones.");
 
-            // Annuler le timer de spin
-            if (this.spinTimeout !== undefined) {
-                clearInterval(this.spinTimeout);
-                this.spinTimeout = undefined;
-            }
+            this.conn.SendMessage(
+                "Chat",
+                `Deer players, the game is stopping. No more bets. Pending ones will be refund.`,
+            );
 
-            this.willSpinAt = undefined;
+            // No new bet
+            this.commandParser.unregister("bet");
         }
 
-        // Si la roue est en train de tourner, attendre la fin
-        if (this.resetTimeout !== undefined) {
-            console.log("Waiting for the current spin to finish...");
-            await new Promise((resolve) => setTimeout(resolve, 15000)); // Attendre 15 secondes (ou ajuster selon le temps de spin)
+        // Annuler les paris en cours et rembourser les joueurs
+        for (const bet of this.rouletteGame.getBets()) {
+            const player = await this.store.getPlayer(bet.memberNumber);
+            player.credits += bet.stake;
+            await this.store.savePlayer(player);
+            this.conn.SendMessage(
+                "Chat",
+                `${bet.memberName}, your bet of ${bet.stake} chips has been refunded.`
+            );
         }
 
-        // Clear all registered commands in the CommandParser
-        this.commandParser.clear();
+        // Nettoyer les paris
+        this.rouletteGame.clear();
+
+        // Annuler le timer de spin
+        if (this.spinTimeout !== undefined) {
+            this.log.debug("Stopping Casino: this.spinTimeout !== undefined");
+            clearInterval(this.spinTimeout);
+            this.spinTimeout = undefined;
+        }
+
+        // Clear the registered commands in the CommandParser and and stop it
+        this.commandParser.stop();
 
         // Remove all event listeners
         this.conn.off("CharacterEntered", this.onCharacterEntered);
@@ -222,8 +259,25 @@ export class Casino {
         this.willSpinAt = undefined;
         this.lockedItems.clear();
 
+        // Wait 2secs to let the db sessions to end.
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+
         // Log or notify that the casino has been stopped
-        console.log("Casino has been stopped and all resources have been released.");
+        this.conn.SendMessage(
+            "Chat",
+            `Deer players, the casino is now closed. Thanks for playing!`
+        );
+
+        const sign = this.getSign();
+        sign.setProperty(
+            "Text",
+            "Closed",
+        );
+        sign.setProperty("Text2", "");
+        this.rouletteState = "Stopped";
+        this.log.debug("rouletteState: ", this.rouletteState);
+
+        this.log.info("Casino has been stopped and all resources have been released.");
     }
 
     private getSign(): API_AppearanceItem {
@@ -267,24 +321,7 @@ export class Casino {
     }
 
     private onCharacterEntered = async (character: API_Character) => {
-        const player = await this.store.getPlayer(character.MemberNumber);
-        player.name = character.toString();
-
-        const nextFreeCreditsAt = player.lastFreeCredits + 20 * 60 * 60 * 1000;
-        if (nextFreeCreditsAt < Date.now()) {
-            player.credits += FREE_CHIPS;
-            player.lastFreeCredits = Date.now();
-            await this.store.savePlayer(player);
-            character.Tell(
-                "Whisper",
-                `Welcome to the Casino, ${character}! Here are your ${FREE_CHIPS} free chips for today. See my bio for how to play. Good luck!`,
-            );
-        } else {
-            character.Tell(
-                "Whisper",
-                `Welcome back, ${character}. ${remainingTimeString(nextFreeCreditsAt)} until your next free chips. See my bio for how to play.`,
-            );
-        }
+        await this.giveFreeChips(character);
     };
 
     private onBeep = (beep: TBeepType) => {
@@ -327,7 +364,7 @@ export class Casino {
                 this.conn.AccountBeep(beep.MemberNumber, null, "Unknown command");
             }
         } catch (e) {
-            console.error("Failed to process beep", e);
+            this.log.error("Failed to process beep", e);
         }
     };
 
@@ -359,7 +396,7 @@ export class Casino {
         } else {
             const blockers = getItemsBlockingForfeit(sender, FORFEITS[bet.stakeForfeit].items());
             if (blockers.length > 0) {
-                console.log(`Blocked forfeit bet of ${bet.stakeForfeit} with blockers `, blockers);
+                this.log.info(`Blocked forfeit bet of ${bet.stakeForfeit} with blockers `, blockers);
                 this.conn.reply(
                     msg,
                     `You can't bet that while you have: ${blockers.map((i) => i.Name).join(", ")}`,
@@ -393,7 +430,7 @@ export class Casino {
         if (FORFEITS[bet.stakeForfeit]?.items().length === 1) {
             const forfeitItem = FORFEITS[bet.stakeForfeit].items()[0];
             if (Date.now() < this.lockedItems.get(sender.MemberNumber)?.get(forfeitItem.Group)) {
-                console.log(`CHEATER DETECTED: ${sender} tried to bet ${bet.stakeForfeit} which should be locked`);
+                this.log.info(`CHEATER DETECTED: ${sender} tried to bet ${bet.stakeForfeit} which should be locked`);
                 ++player.cheatStrikes;
                 await this.store.savePlayer(player);
 
@@ -404,6 +441,8 @@ export class Casino {
         }
 
         this.rouletteGame.placeBet(bet);
+        this.rouletteState = "BetsGoing";
+        this.log.debug("rouletteState: ", this.rouletteState);
 
         if (this.willSpinAt === undefined) {
             if (this.resetTimeout !== undefined) {
@@ -725,7 +764,7 @@ export class Casino {
 
             clearInterval(this.spinTimeout);
             this.spinWheel().catch((e) => {
-                console.error("Failed to spin wheel.", e);
+                this.log.error("Failed to spin wheel.", e);
             });
         } else {
             this.setTextColor("#ffffff");
@@ -744,20 +783,24 @@ export class Casino {
             (prevSection + (prevSection % 2 === winningNumber % 2 ? 2 : 1)) % 8;
         const targetAngle = (targetSection * 45 + 67) % 360;
 
-        console.log(`Winning number: ${winningNumber}`);
-        console.log(`Prev angle: ${prevAngle}`);
-        console.log(`Prev section: ${prevSection}`);
-        console.log(`Target section: ${targetSection}`);
-        console.log(`Target angle: ${targetAngle}`);
-        console.log(`Spinning wheel from ${prevAngle} to ${targetAngle}`);
+        this.log.debug(`Winning number: ${winningNumber}`);
+        this.log.debug(`Prev angle: ${prevAngle}`);
+        this.log.debug(`Prev section: ${prevSection}`);
+        this.log.debug(`Target section: ${targetSection}`);
+        this.log.debug(`Target angle: ${targetAngle}`);
+        this.log.debug(`Spinning wheel from ${prevAngle} to ${targetAngle}`);
 
         wheel.setProperty("TargetAngle", targetAngle);
 
+        this.rouletteState = "Spinning";
+        this.log.debug("rouletteState: ", this.rouletteState);
         await wait(10000);
 
         this.resetTimeout = setTimeout(() => {
             sign.setProperty("Text", "Place bets!");
             sign.setProperty("Text2", " ");
+            this.rouletteState = "WaitForBet";
+            this.log.debug("rouletteState: ", this.rouletteState);
             this.willSpinAt = undefined;
             this.resetTimeout = undefined;
         }, 12000);
@@ -795,6 +838,8 @@ export class Casino {
         this.conn.SendMessage("Chat", message);
 
         this.rouletteGame.clear();
+        this.rouletteState = "Resetting";
+        this.log.debug("rouletteState: ", this.rouletteState);
         await this.setBio();
     }
 
@@ -866,4 +911,43 @@ export class Casino {
             sign.setProperty("Text2", "");
         }
     }
+
+    private async giveFreeChips(character: API_Character): Promise<void> {
+        const player = await this.store.getPlayer(character.MemberNumber);
+        player.name = character.toString();
+
+        const nextFreeCreditsAt = player.lastFreeCredits + 20 * 60 * 60 * 1000;
+        if (nextFreeCreditsAt < Date.now()) {
+            player.credits += FREE_CHIPS;
+            player.lastFreeCredits = Date.now();
+            await this.store.savePlayer(player);
+            character.Tell(
+                "Whisper",
+                `Welcome to the Casino, ${character}! Here are your ${FREE_CHIPS} free chips for today. See my bio for how to play. Good luck!`,
+            );
+        } else {
+            character.Tell(
+                "Whisper",
+                `Welcome back, ${character}. ${remainingTimeString(nextFreeCreditsAt)} until your next free chips. See my bio for how to play.`,
+            );
+        }
+    }
+
+    private onCommandFree = async (
+        sender: API_Character,
+        msg: BC_Server_ChatRoomMessage,
+        args: string[],
+    ) => {
+        if (sender.MemberNumber === 186990) {
+            const bondageItemGroups = ['ItemAddon', 'ItemArms', 'ItemBoots', 'ItemBreast', 'ItemButt', 'ItemDevices', 'ItemEars',
+                'ItemFeet', 'ItemHands', 'ItemHead', 'ItemHood', 'ItemLegs', 'ItemMisc', 'ItemMouth', 'ItemMouth2',
+                'ItemMouth3', 'ItemNeck', 'ItemNeckAccessories', 'ItemNeckRestraints', 'ItemNipples', 'ItemNipplesPiercings',
+                'ItemNose', 'ItemPelvis', 'ItemTorso', 'ItemTorso2', 'ItemVulva', 'ItemVulvaPiercings', 'ItemHandheld'];
+
+            for (const ItemGroup of bondageItemGroups) {
+                sender.Appearance.RemoveItem(ItemGroup);
+                await wait(100);
+            }
+        }
+    };
 }

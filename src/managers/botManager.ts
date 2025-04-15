@@ -81,29 +81,45 @@ export class BotManager {
         return this.db;
     }
 
-    public async connectToDatabase(): Promise<void> {
-        if (this.config.mongo_uri && this.config.mongo_db && this.db === undefined) {
-            this.mongoClient = new MongoClient(this.config.mongo_uri, {
-                ssl: false,
-                tls: false,
-            });
-            this.log.log("Connecting to mongo... On Url: ", this.config.mongo_uri);
-            await this.mongoClient.connect();
-            this.log.log("...connected! Accessing database: ", this.config.mongo_db);
-            this.db = this.mongoClient.db(this.config.mongo_db);
-            await this.db.command({ ping: 1 });
-            this.log.log("...ping successful!");
+    public async connectToDatabase(mongo_db: string): Promise<void> {
+        try {
+            if (this.config.mongo_uri && mongo_db && !this.db) {
+                this.mongoClient = new MongoClient(this.config.mongo_uri, {
+                    ssl: false,
+                    tls: false,
+                });
+                this.log.log("Connecting to mongo... On Url: ", this.config.mongo_uri);
+                await this.mongoClient.connect();
+                this.log.log("...connected! Accessing database: ", mongo_db);
+                this.db = this.mongoClient.db(mongo_db);
+                await this.db.command({ ping: 1 });
+                this.log.log("...ping successful!");
+            } else {
+                this.log.log("MongoDB connection not needed or already connected.");
+                this.log.debug("uri:", this.config.mongo_uri, "db: ", mongo_db, "db: ", this.db);
+            }
+        } catch (e) {
+            this.log.error("Error connecting to MongoDB:", e);
         }
     }
 
     public async disconnectFromDatabase(): Promise<void> {
-        // Close the database connection
-        if (this.mongoClient) {
+        if (!this.mongoClient) {
+            this.log.info("No active MongoDB connection to close.");
+            return;
+        }
+
+        try {
             this.log.info("Closing the database connection...");
             await this.mongoClient.close();
+        } catch (e) {
+            this.log.error("Error while closing the database connection:", e);
+        } finally {
+            // Nettoyer les références même en cas d'erreur
             this.mongoClient = undefined;
             this.db = undefined;
         }
+
     }
 
     public getRoomInfos() {

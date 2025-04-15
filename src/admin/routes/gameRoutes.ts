@@ -10,7 +10,7 @@ export const gameRoutes = (gameManager: GameManager) => {
             res.status(400).send("Invalid botId");
             return;
         }
-        res.json(gameManager.getGameData(botId));
+        res.json(gameManager.getGameInfos(botId));
     });
 
     router.post('/:botId/start', async (req, res) => {

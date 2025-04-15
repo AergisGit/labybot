@@ -1,4 +1,6 @@
 {
+    "game": "laby",
+    "gameName": "dustyLabyrinth",
     "room": {
         "Name": "Dusty Old Labyrinth",
         "Description": "Come and find the exit of this labyrinth!",

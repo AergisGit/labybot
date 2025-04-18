@@ -1,17 +1,19 @@
-import { API_Connector, CoordObject } from "../apiConnector";
+import { API_Connector } from "../apiConnector";
 import { CommandParser } from "../commandParser";
 import { Logger } from "../utils/logger";
-import { GameInfosData } from "../managers/config/gameInfos";
+import { GameInfosData } from "@shared/types/game";
 
 export abstract class GameInstance {
     protected conn: API_Connector;
     protected log: Logger;
     protected commandParser: CommandParser;
+    protected gameInfos: GameInfosData
 
-    constructor(conn: API_Connector, protected gameInfos: GameInfosData) {
+    constructor(conn: API_Connector, gameInfos: GameInfosData) {
         this.conn = conn;
         this.log = new Logger(gameInfos.game.toUpperCase(), "debug", true, "blue");
         this.commandParser = new CommandParser(conn);
+        this.gameInfos = gameInfos;
 
         // Écoute des événements communs
         this.conn.on("RoomCreate", this.onRoomCreate);
@@ -21,8 +23,12 @@ export abstract class GameInstance {
     // Méthode d'initialisation commune
     public async init(): Promise<void> {
         this.log.info(`Initializing game: ${this.gameInfos.game}`);
-        await this.setupRoom();
-        await this.setupCharacter();
+    }
+
+    public async updateGameInfos(gameInfos?: GameInfosData): Promise<void> {
+        this.gameInfos = gameInfos || this.gameInfos;
+        this.setupRoom();
+        this.setupCharacter();
     }
 
     // Méthode d'arrêt commune
@@ -30,27 +36,30 @@ export abstract class GameInstance {
         this.log.info(`Stopping game: ${this.gameInfos.game}`);
         this.conn.off("RoomCreate", this.onRoomCreate);
         this.conn.off("RoomJoin", this.onRoomJoin);
-        this.commandParser.clear();
+        this.commandParser.stop();
+
+        // Call specific game tasks
+        await this.cleanupGameSpecific();
     }
+    
+    // Protected methos for specific stopping task
+    protected async cleanupGameSpecific(): Promise<void> {}
 
     // Méthodes à surcharger par les jeux spécifiques
     protected abstract setupRoom(): Promise<void>;
     protected abstract setupCharacter(): Promise<void>;
 
     // Gestion des événements communs
-    private onRoomCreate = async () => {
+    protected onRoomCreate = async () => {
         this.log.info("Room created, setting up...");
         await this.setupRoom();
         await this.setupCharacter();
     };
 
-    private onRoomJoin = async () => {
+    protected onRoomJoin = async () => {
         this.log.info("Bot joined the room, setting up character...");
         await this.setupCharacter();
     };
 
-    // Méthode utilitaire pour enregistrer des commandes
-    protected registerCommand(command: string, handler: (...args: any[]) => void): void {
-        this.commandParser.register(command, handler);
-    }
+
 }

@@ -2,7 +2,7 @@
 export const GAME_EVENTS = [
     'serverInfo',
     'botInfos',
-    'gameState',
+    'gamesList',
     // Ajoutez d'autres événements ici
 ] as const;
 

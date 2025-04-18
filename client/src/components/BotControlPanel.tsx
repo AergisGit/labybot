@@ -4,9 +4,9 @@ import { useSocketContext } from "../context/SocketContext";
 const BotControlPanel: React.FC = () => {
     const { socket, data } = useSocketContext();
 
-    // Is bot running right now
+    // Is bot running right now 
     const isBotRunning = data?.botInfos?.connected || false;
-    const botStatus=`${data?.botInfos?.botName} (${data?.botInfos?.botNumber}) : ${data?.botInfos?.connected ? "En ligne" : "Hors ligne"}`;
+    const botStatus=`${data?.botInfos?.connected ? "✅" : "🛑"} ${data?.botInfos?.botName} (${data?.botInfos?.botNumber}) \n`;
 
     const handleStartBot = () => {
         socket?.emit("startBot", { botId: 0 });

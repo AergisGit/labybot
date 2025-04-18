@@ -87,7 +87,7 @@ export interface CasinoConfig {
     cocktail: string
 }
 
-type rouletteState = "WaitForBet" | "BetsGoing" | "Spinning" | "Resetting" | "Stopped";
+type rouletteState = "WaitForBet" | "BetsGoing" | "Spinning" | "Resetting" | "Stopping";
 
 export class Casino {
     public log: Logger;
@@ -191,9 +191,15 @@ export class Casino {
     }
 
     public async stop(): Promise<void> {
+        if (this.rouletteState === "Stopping") {
+            this.log.info("Casino is already stopping.");
+            return;
+        }
 
         if (this.rouletteState === "Spinning") {
-
+            // If we are spinning, we need to wait for the spin to finish before stopping
+            this.rouletteState = "Stopping";
+            this.log.debug("rouletteState: ", this.rouletteState);
             this.log.info("Waiting for the current spin to finish...");
             this.conn.SendMessage(
                 "Chat",
@@ -201,11 +207,13 @@ export class Casino {
             );
             // No new bet
             this.commandParser.unregister("bet");
-            // wait for the end of the spin and resolution
+            // Wait for the end of the spin (max 10sec) and resolution (a little more)
             await new Promise((resolve) => setTimeout(resolve, 12000));
 
         } else {
-
+            // If we are not spinning, we can just cancel bets and stop the game
+            this.rouletteState = "Stopping";
+            this.log.debug("rouletteState: ", this.rouletteState);
             this.log.info("Stopping casino: Cancelling bets and preventing new ones.");
 
             this.conn.SendMessage(
@@ -213,11 +221,11 @@ export class Casino {
                 `Deer players, the game is stopping. No more bets. Pending ones will be refund.`,
             );
 
-            // No new bet
+            // Prevent new bets
             this.commandParser.unregister("bet");
         }
 
-        // Annuler les paris en cours et rembourser les joueurs
+        // Cancel ongoing bets and refund players
         for (const bet of this.rouletteGame.getBets()) {
             const player = await this.store.getPlayer(bet.memberNumber);
             player.credits += bet.stake;
@@ -228,7 +236,7 @@ export class Casino {
             );
         }
 
-        // Nettoyer les paris
+        // Cleanup the bets
         this.rouletteGame.clear();
 
         // Annuler le timer de spin
@@ -263,19 +271,11 @@ export class Casino {
         await new Promise((resolve) => setTimeout(resolve, 2000));
 
         // Log or notify that the casino has been stopped
-        this.conn.SendMessage(
-            "Chat",
-            `Deer players, the casino is now closed. Thanks for playing!`
-        );
+        this.conn.SendMessage("Chat",`Deer players, the casino is now closed. Thanks for playing!`);
 
         const sign = this.getSign();
-        sign.setProperty(
-            "Text",
-            "Closed",
-        );
+        sign.setProperty("Text","Closed",);
         sign.setProperty("Text2", "");
-        this.rouletteState = "Stopped";
-        this.log.debug("rouletteState: ", this.rouletteState);
 
         this.log.info("Casino has been stopped and all resources have been released.");
     }
@@ -792,7 +792,7 @@ export class Casino {
 
         wheel.setProperty("TargetAngle", targetAngle);
 
-        this.rouletteState = "Spinning";
+        this.rouletteState = "Spinning"; // it was already spinning, it's the 10s spinning resolution
         this.log.debug("rouletteState: ", this.rouletteState);
         await wait(10000);
 
@@ -912,6 +912,8 @@ export class Casino {
         }
     }
 
+    // Gives free chips to the player 
+    //   if they haven't received them in the last 20 hours since the last giveaway
     private async giveFreeChips(character: API_Character): Promise<void> {
         const player = await this.store.getPlayer(character.MemberNumber);
         player.name = character.toString();
@@ -933,6 +935,7 @@ export class Casino {
         }
     }
 
+    // Used for debuging purposes only
     private onCommandFree = async (
         sender: API_Character,
         msg: BC_Server_ChatRoomMessage,

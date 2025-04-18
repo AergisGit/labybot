@@ -12,16 +12,25 @@ export interface TriggerDef {
     link?: string;       // Lien supplémentaire (optionnel)
 }
 
-export interface GameConf {
-    game: string;
-    gameName?: string;
+export interface GameInfosData {
+  game: string;
+  gameName: string;
 
-    // State of the game
-    gameRunning?: boolean;
+  room?: RoomDefinition;
+  botDescription?: string[];
 
-    // For games like the laby, with triggers on a map
-    triggerData?: TriggerDef;
+  map?: string;
+  maps?: [{ name: string, map: string }]; // Pour les jeux avec plusieurs maps
+  botPosition?: CoordObject;
 
-    // For the casino
-    casino?: any;
+  triggersData?: TriggerDef[];
+
+  mongo_db?: string;
+  casino?: CasinoConfig;
 }
+
+/**
+ * Each record in the gamesList is a type of game
+ *  and the value is an array of configured game names for that type of game.
+ */
+export type GamesList = Record<string, string[]>;

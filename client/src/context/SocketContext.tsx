@@ -7,10 +7,10 @@ import { SocketContextType, SocketData } from "../types/socket";
 const SocketContext = createContext<SocketContextType>({
     socket: null,
     data: {
-        botInfos: undefined,
-        gameConf: undefined,
-        botData: undefined,
         serverInfo: undefined,
+        botInfos: undefined,
+        gameInfos: undefined,
+        gamesList: undefined,
     },
     isConnected: false,
     isLoading: true,
@@ -54,20 +54,20 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
             const savedData = localStorage.getItem("socketData");
             if (!savedData)
                 return {
-                    botInfos: undefined,
-                    gameConf: undefined,
-                    botData: undefined,
                     serverInfo: undefined,
+                    botInfos: undefined,
+                    gameInfos: undefined,
+                    gamesList: undefined,
                 };
             return JSON.parse(savedData);
         } catch (error) {
             console.error("Error reading from localStorage:", error);
             localStorage.removeItem("socketData");
             return {
-                botInfos: undefined,
-                gameConf: undefined,
-                botData: undefined,
                 serverInfo: undefined,
+                botInfos: undefined,
+                gameInfos: undefined,
+                gamesList: undefined,
             };
         }
     });
@@ -76,8 +76,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
     useEffect(() => {
         if (socket) {
             //socket.on("botInfos", (payload) => {setData((prev: any) => ({ ...prev, botInfos: payload }));});
-            //socket.on("gameConf", (payload) => {setData((prev: any) => ({ ...prev, gameConf: payload }));});
-            //socket.on("botData", (payload) => {setData((prev: any) => ({ ...prev, botData: payload }));});
+            //socket.on("gameInfos", (payload) => {setData((prev: any) => ({ ...prev, gameInfos: payload }));});
             //socket.on("serverInfo", (payload) => {setData((prev: any) => ({ ...prev, serverInfo: payload }));});
 
             socket.on("botInfos", (payload) => {
@@ -89,17 +88,9 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
                 });
             });
 
-            socket.on("gameConf", (payload) => {
+            socket.on("gameInfos", (payload) => {
                 setData((prev) => {
-                    const newData = { ...prev, gameConf: payload };
-                    localStorage.setItem("socketData", JSON.stringify(newData));
-                    return newData;
-                });
-            });
-
-            socket.on("botData", (payload) => {
-                setData((prev) => {
-                    const newData = { ...prev, botData: payload };
+                    const newData = { ...prev, gameInfos: payload };
                     localStorage.setItem("socketData", JSON.stringify(newData));
                     return newData;
                 });
@@ -113,6 +104,16 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
                     return newData;
                 });
             });
+
+            socket.on("gamesList", (payload) => {
+                setData((prev) => {
+                    const newData = { ...prev, gamesList: payload };
+                    console.log("gamesList", JSON.stringify(newData));
+                    localStorage.setItem("socketData", JSON.stringify(newData));
+                    return newData;
+                });
+            });
+            
 
             socket.on("connect", () => {
                 setIsConnected(true);
@@ -144,8 +145,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
             socket?.off("connect_timeout");
             socket?.off("botInfos");
             socket?.off("serverInfo");
-            socket?.off("gameConf");
-            socket?.off("botData");
+            socket?.off("gameInfos");
         };
     }, [socket]);
 

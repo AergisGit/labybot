@@ -1,28 +1,10 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { readFile, writeFile } from "fs/promises";
-import { CoordObject, RoomDefinition } from "../../apiConnector";
-import { TriggerDef } from "../../games/utils/triggerManager";
+import { readFile } from "fs/promises";
+import { GameInfosData } from "@shared/types/game";
 import { CasinoConfig } from "../../games/casino";
 import { Logger } from '../../utils/logger';
 
-
-export interface GameInfosData {
-  game: string;
-  gameName: string;
-
-  room?: RoomDefinition;
-  botDescription?: string[];
-
-  map?: string;
-  maps?: [{ name: string, map: string }]; // Pour les jeux avec plusieurs maps
-  botPosition?: CoordObject;
-
-  triggersData?: TriggerDef[];
-
-  mongo_db?: string;
-  casino?: CasinoConfig;
-}
 
 // Get GameInfos from file
 export async function getGameInfos(game: string, gameName: string): Promise<GameInfosData> {
@@ -47,14 +29,38 @@ export class GameInfos {
   }
 
   public init() {
-    this.gameInfos = this.loadGameInfos();
+    this.gameInfos = this.loadGameInfos(this.game, this.gameName);
     this.log.info(`GameInfos initialized for ${this.game} (${this.gameName})`);
   }
 
   public setGame(game: string, gameName: string) {
     this.game = game;
     this.gameName = gameName;
-    this.gameInfos = this.loadGameInfos();
+    this.gameInfos = this.loadGameInfos(this.game, this.gameName);
+  }
+
+  // Get the directories under this.baseDir, and return for each game, the name of their files as gameName
+  public getGamesList(): Record<string, string[]> {
+    const gamesList: Record<string, string[]> = {};
+    const games = fs.readdirSync(this.baseDir, { withFileTypes: true });
+
+    for (const game of games) {
+      if (game.isDirectory()) {
+        const gameDir = path.join(this.baseDir, game.name);
+        const files = fs.readdirSync(gameDir, { withFileTypes: true });
+  
+        const names = files
+          .filter(file => file.isFile() && file.name.endsWith('.json'))
+          .map(file => file.name.slice(0, -5)); // Remove the '.json' extension
+  
+        if (names.length > 0) {
+          gamesList[game.name] = names;
+        }
+      }
+    }
+    this.log.debug(`Game names found: ${JSON.stringify(gamesList)}`);
+  
+    return gamesList;
   }
 
   /**
@@ -63,9 +69,8 @@ export class GameInfos {
    * @param gameName Nom de la ressource (par exemple, "dustyLabyrinth").
    * @returns Les données JSON sous forme d'objet `GameInfosData` ou null si une erreur survient.
    */
-  public loadGameInfos(): GameInfosData | null {
-
-    const filePath = path.join(this.baseDir, `${this.game}/${this.gameName}.json`);
+  public loadGameInfos(game: string, gameName: string): GameInfosData | null {
+    const filePath = path.join(this.baseDir, `${game}/${gameName}.json`);
     if (!fs.existsSync(filePath)) {
       this.log.error(`The file ${filePath} does not exist.`);
       return null;
@@ -82,7 +87,7 @@ export class GameInfos {
   }
 
   public saveGameInfos(newGameInfos: GameInfosData): boolean {
-    const filePath = path.join(this.baseDir, `${this.game}/${this.gameName}.json`);
+    const filePath = path.join(this.baseDir, `${newGameInfos.game}/${newGameInfos.gameName}.json`);
 
     if (!fs.existsSync(filePath)) {
       fs.mkdirSync(filePath, { recursive: true });  // Create directories if they don't exist
@@ -93,7 +98,7 @@ export class GameInfos {
       const fileContent = fs.writeFileSync(filePath, JSON.stringify(newGameInfos, null, 2), 'utf8');
       return true;
     } catch (error) {
-      this.log.error(`Error while trying to sava ${this.game}/${this.gameName}.json :`, error);
+      this.log.error(`Error while trying to sava ${newGameInfos.game}/${newGameInfos.gameName}.json :`, error);
       return false;
     }
   }
@@ -101,7 +106,7 @@ export class GameInfos {
   /**
  * @returns Les données JSON sous forme d'objet `GameInfosData` ou null si une erreur survient.
  */
-  public getGameInfos(): GameInfosData | null {
+  public getGameInfos(game?: string, gameName?: string): GameInfosData | null {
     return this.gameInfos;
   }
 }

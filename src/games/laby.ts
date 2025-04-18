@@ -25,7 +25,7 @@ import { formatDuration, wait } from "../utils/time";
 import { Logger } from '../utils/logger';
 import { perf } from '../utils/perf';
 import { TriggerDef, TriggerManager } from "./utils/triggerManager";
-import { GameInfosData, GameInfos } from "../managers/config/gameInfos";
+import { GameInfosData } from "@shared/types/game";
 import * as fs from 'fs'; // for the winners and challengers list
 
 const SAVEFILE_PATH = "/bot/save/";
@@ -125,15 +125,9 @@ export class Laby {
 
         // Nettoyer les triggers placés en dur :
         //this.conn.chatRoom.map.removeTileTrigger(8,27, this.onCharacterEnterTrolley);
-
-        // Désenregistrer les commandes dans commandParser
-        this.commandParser.unregister("fame");
-        this.commandParser.unregister("who");
-        this.commandParser.unregister("time");
-        this.commandParser.unregister("free");
-        this.commandParser.unregister("updateroom");
-        this.commandParser.unregister("reset");
-        this.commandParser.unregister("debug");
+        
+        // Clear the registered commands in the CommandParser and and stop it
+        this.commandParser.stop();
 
         this.log.info("Laby game stopped.");
     }

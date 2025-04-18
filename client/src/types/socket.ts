@@ -1,12 +1,12 @@
 import { Socket } from "socket.io-client";
 import { BotInfos } from "../../../shared/types/bot";
-import { GameConf } from "../../../shared/types/game";
+import { GameInfosData, GamesList } from "../../../shared/types/game";
 
 export interface SocketData {
-    botInfos?: BotInfos;
-    gameConf?: GameConf;
-    botData?: any;
     serverInfo?: any;
+    botInfos?: BotInfos;
+    gameInfos?: GameInfosData;
+    gamesList?: GamesList;
 }
 
 export interface SocketContextType {

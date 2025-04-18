@@ -26,6 +26,9 @@ body {
   padding: 1rem;
   padding-bottom: 0;
 }
+.header-content {
+  position: relative; /* Permet au menu déroulant de se positionner par rapport à cette zone */
+}
 
 .ascii-logo {
   font-size: 6px;
@@ -52,7 +55,7 @@ body {
 
 /* Éléments du milieu (peuvent être multiples) */
 .header-row .header-content {
-  overflow: hidden;
+  overflow: visible;
   text-overflow: ellipsis;
   min-width: 0;
   display: flex;
@@ -96,6 +99,81 @@ body {
     border: 1px solid #ddd;
     border-radius: 4px;
     margin: 10px 0;
+}
+
+#gameStatus {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  max-width: 100%;
+  overflow-x: hidden;
+  font-family: monospace;
+  background-color: #f5f5f5;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin: 10px 0;
+  
+  cursor: pointer;
+  display: inline-block;
+  transition: background-color 0.3s ease;
+}
+
+#gameStatus:hover {
+  background-color: #ddd;
+}
+
+.dropdown-menu {
+  position: absolute; /* Positionne le menu par rapport à .header-content */
+  top: calc(100%); /* Place le menu juste en dessous de #gameStatus avec un petit espace */
+  left: 0; /* Aligne le menu avec le bord gauche de #gameStatus */
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Ajoute une ombre pour l'effet pop-up */
+  padding: 1rem;
+  z-index: 1000; /* Assure que le menu est au-dessus des autres éléments */
+  min-width: 200px; /* Assure une largeur minimale */
+  max-width: 300px; /* Limite la largeur maximale */
+}
+
+.dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 0.5rem;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.dropdown-item:hover {
+  background-color: #ddd;
+}
+
+.dropdown-item.selected {
+  background-color: #444;
+  color: white;
+}
+
+.apply-button {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  background-color: #444;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.apply-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.apply-button:hover {
+  background-color:  #333;
 }
 
 .map-container {

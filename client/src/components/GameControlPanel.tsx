@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useSocketContext } from "../context/SocketContext";
 import { GamesList } from "../../../shared/types/game";
 
@@ -15,34 +15,69 @@ const GameControlPanel: React.FC = () => {
     const gameStatus = `${data?.botInfos?.gameRunning ? "✅" : "🛑"} ${data?.botInfos?.game}: ${data?.botInfos?.gameName || "default"}`;
 
     // State for selected game and gameName
-    const [selectedGame, setSelectedGame] = useState<string>(data?.botInfos?.game || "");
-    const [selectedGameName, setSelectedGameName] = useState<string>(data?.botInfos?.gameName || "");
+    const [selectedGame, setSelectedGame] = useState<string>(
+        data?.botInfos?.game || "",
+    );
+    const [selectedGameName, setSelectedGameName] = useState<string>(
+        data?.botInfos?.gameName || "",
+    );
 
+    // State for dropdown visibility
+    const [isDropdownVisible, setIsDropdownVisible] = useState(false);
+
+    // Ref for detecting clicks outside the dropdown
+    const dropdownRef = useRef<HTMLDivElement>(null);
 
     // Handle game change
-    const handleGameChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-        setSelectedGame(event.target.value);
+    const handleGameChange = (game: string) => {
+        setSelectedGame(game);
         setSelectedGameName(""); // Reset gameName when game changes
     };
 
     // Handle gameName change
-    const handleGameNameChange = ( event: React.ChangeEvent<HTMLSelectElement>) => {
-        setSelectedGameName(event.target.value);
+    const handleGameNameChange = (gameName: string) => {
+        setSelectedGameName(gameName);
     };
 
     // Handle apply changes
     const handleApplyChanges = () => {
         if (selectedGame && selectedGameName) {
-            //socket?.emit("getGamesList", {game: selectedGame,gameName: selectedGameName,});
-            socket?.emit("changeBotGame", {botId: 0, game: selectedGame, gameName: selectedGameName});
+            socket?.emit("changeBotGame", {
+                botId: 0,
+                game: selectedGame,
+                gameName: selectedGameName,
+            });
+            setIsDropdownVisible(false); // Close dropdown after applying changes
         }
     };
 
     // Get list of gameNames for the selected game
     const gameNames = gamesList[selectedGame] || [];
 
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (
+                dropdownRef.current &&
+                !dropdownRef.current.contains(event.target as Node) &&
+                !(event.target as HTMLElement).closest("#gameStatus")
+            ) {
+                console.log("Clicked outside, closing dropdown");
+                setIsDropdownVisible(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
+
     const handleStartGame = () => {
-        socket?.emit("startGame", { botId: 0, game: data?.botInfos?.game, gameName: data?.botInfos?.gameName });
+        socket?.emit("startGame", {
+            botId: 0,
+            game: data?.botInfos?.game,
+            gameName: data?.botInfos?.gameName,
+        });
     };
 
     const handleStopGame = () => {
@@ -51,54 +86,59 @@ const GameControlPanel: React.FC = () => {
 
     return (
         <div className="header-row">
-            <div className="header-content">
-                <p id="gameStatus">{gameStatus}</p>
-            </div>
-            <div className="header-content">
-                {isBotRunning && (
-                    <>
+            <div className="header-content" style={{ position: "relative" }}>
+                <p
+                    id="gameStatus"
+                    onClick={(e) => {
+                        console.log("Toggling dropdown visibility:", !isDropdownVisible);
+                        e.stopPropagation(); // Empêche la propagation pour éviter que le clic soit interprété comme extérieur
+                        if (isDropdownVisible) {
+                            setIsDropdownVisible(false); // Ferme le menu si déjà ouvert
+                        } else {
+                            setIsDropdownVisible(true); // Ouvre le menu si fermé
+                        }
+                    }}
+                >
+                    {gameStatus}
+                </p>
+                {isDropdownVisible && (
+                    <div className="dropdown-menu" ref={dropdownRef}>
                         <div>
-                            <label htmlFor="gameSelect">Jeu :</label>
-                            <select
-                                id="gameSelect"
-                                value={selectedGame}
-                                onChange={handleGameChange}
-                            >
-                                <option value="" disabled>
-                                    Choisir un jeu
-                                </option>
-                                {Object.keys(gamesList).map((game) => (
-                                    <option key={game} value={game}>
-                                        {game}
-                                    </option>
-                                ))}
-                            </select>
+                            <p>Jeu :</p>
+                            {Object.keys(gamesList).map((game) => (
+                                <button
+                                    key={game}
+                                    className={`dropdown-item ${selectedGame === game ? "selected" : ""}`}
+                                    onClick={() => handleGameChange(game)}
+                                >
+                                    {game}
+                                </button>
+                            ))}
                         </div>
-                        <div>
-                            <label htmlFor="gameNameSelect">Nom du jeu :</label>
-                            <select
-                                id="gameNameSelect"
-                                value={selectedGameName}
-                                onChange={handleGameNameChange}
-                                disabled={!selectedGame}
-                            >
-                                <option value="" disabled>
-                                    Choisir un nom de jeu
-                                </option>
+                        {selectedGame && (
+                            <div>
+                                <p>Nom du jeu :</p>
                                 {gameNames.map((name) => (
-                                    <option key={name} value={name}>
+                                    <button
+                                        key={name}
+                                        className={`dropdown-item ${selectedGameName === name ? "selected" : ""}`}
+                                        onClick={() =>
+                                            handleGameNameChange(name)
+                                        }
+                                    >
                                         {name}
-                                    </option>
+                                    </button>
                                 ))}
-                            </select>
-                        </div>
+                            </div>
+                        )}
                         <button
                             onClick={handleApplyChanges}
                             disabled={!selectedGame || !selectedGameName}
+                            className="apply-button"
                         >
                             Appliquer
                         </button>
-                    </>
+                    </div>
                 )}
             </div>
             <div className="header-content">

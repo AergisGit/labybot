@@ -16,8 +16,7 @@
         "Access": ["All"],
         "Visibility":["Whitelist", "Admin"]
     },
-    "botDescription": [
-        "Welcome to the Dragon Casino!",
+    "botDescription": ["Welcome to the Dragon Casino!",
         "",
         "This is a bot operated casino. You can play games, and win or lose points.",
         "",

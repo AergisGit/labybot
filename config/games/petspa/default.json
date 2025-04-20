@@ -3,17 +3,18 @@
     "gameName": "default",
     "room": {
         "Name": "The Ropey Bot Pet Spa !",
-        "Description": "This is an example to show how to use the ropeybot API to create a simple game.",
-        "Background": "HouseInterior3",
-        "Private": true,
-        "Locked": false,
-        "Space": "X",
-        "Ban": [],
+        "Language": "EN",
         "Limit": 10,
+        "Description": "This is an example to show how to use the ropeybot API to create a simple game.",
+        "Admin": [197228,189644,186990],
+        "Whitelist": [],
+        "Ban": [],
+        "Background": "HouseInterior3",
         "BlockCategory": [],
         "Game": "",
-        "Language": "EN",
-        "Admin": [197228, 189644, 186990]
+        "Space": "X",
+        "Access": ["All"],
+        "Visibility":["Whitelist", "Admin"]
     },
     "botDescription": [
         "This is an example to show how to use the ropeybot API to create a simple game.",

@@ -50,10 +50,12 @@ export class BotManager {
             this.config.user,
             this.config.password,
             this.config.env,
-        );
-        await this.connector.joinOrCreateRoom(this.config.room);
+        );/*
+        if(this.config.room !==undefined){
+            this.log.info("Joining room: ", this.config.room.Name);
+            await this.connector.joinOrCreateAnotherRoom(this.config.room);
+        }*/
         this.log.info("Bot connected successfully.");
-        //await this.startGame();
     }
 
     public async stopBot(): Promise<void> {

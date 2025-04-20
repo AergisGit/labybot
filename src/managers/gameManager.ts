@@ -3,7 +3,8 @@ import { ConfigFile, getDefaultConfig } from './config/config';
 import { Logger } from '../utils/logger';
 import { BotInfos } from "@shared/types/bot";
 import { GameInfosData } from "@shared/types/game";
-import { API_Connector } from '../apiConnector'
+import { API_Connector, RoomDefinition } from '../apiConnector'
+import { API_Chatroom, API_Chatroom_Data, ChatRoomAccessVisibility } from "../apiChatroom";
 import { Dare } from "../games/dare";
 import { PetSpa } from "../games/petspa";
 import { Home } from "../games/home";
@@ -342,7 +343,7 @@ export class GameManager extends EventEmitter {
     public async startGame(botId: number = 0, game: string, gameName: string): Promise<boolean> {
         try {
             this.log.info(`Game ${game}:${gameName} starting on bot ${botId}.`);
-            
+
             const botInstance = this.botInstances.get(botId);
             if (!botInstance) {
                 throw new Error(`Cannot start game, bot ${botId} is not connected.`);
@@ -366,11 +367,12 @@ export class GameManager extends EventEmitter {
                 } else {
                     gameInfos = gameInstance.gameInfos;
                 }
-            } else {
-                // Load the gameInfos from the file
-                gameInfos = this.GameInfos.loadGameInfos(game, gameName);
             }
 
+            if (gameInfos === undefined) {
+                gameInfos = this.GameInfos.loadGameInfos(game, gameName);
+            }
+            //this.log.debug("GameInfos loaded: ", JSON.stringify(gameInfos, null, 2));
 
             this.log.debug(`Updating gameInstances.`);
             // Set gameInstance infos so that even  if the game can't launch, we still now what game we're at
@@ -379,11 +381,33 @@ export class GameManager extends EventEmitter {
             );
 
 
+            // Getting into the game's room, and updating it
+            /*
+            this.log.debug(`Preparing roomInfos {gameInfos.room.Name}...`);
+            const roomInfos: RoomDefinition = {
+                Name: gameInfos.room.Name,
+                Description: gameInfos.room.Description,
+                Background: gameInfos.room.Background,
+                Access: gameInfos.room.Access,
+                Visibility: gameInfos.room.Visibility,
+                Space: gameInfos.room.Space,
+                Admin: gameInfos.room.Admin,
+                Ban: gameInfos.room.Ban,
+                Limit: gameInfos.room.Limit,
+                BlockCategory: gameInfos.room.BlockCategory,
+                Game: gameInfos.room.Game,
+                Language: gameInfos.room.Language,
+            };
+            this.log.debug("Updating room with roomInfos: ");
+            connector.updateRoom(roomInfos);
+            */
+           
             this.log.debug(`Choosing game to start.`);
             switch (game) {
 
                 case "dare":
-                    gameInstance = new Dare(connector);
+                    gameInstance = new Dare(connector, gameInfos);
+                    await gameInstance.init();
                     break;
 
                 case "casino":
@@ -397,17 +421,19 @@ export class GameManager extends EventEmitter {
                     } catch (e) {
                         throw new Error("Can't launch the casino, Failed to connect to the database:", e);
                     }
-                    gameInstance = new Casino(connector, db, gameInfos.casino);
+                    gameInstance = new Casino(connector, db, gameInfos);
                     await gameInstance.init();
                     break;
 
                 case "petspa":
-                    gameInstance = new PetSpa(connector);
+                    gameInstance = new PetSpa(connector, gameInfos);
                     await gameInstance.init();
                     break;
 
                 case "home":
+                    this.log.debug(`Switch: Cosntruct Game ${game}:${gameName} starting on bot ${botId}.`);
                     gameInstance = new Home(connector, gameInfos, this.config.superusers);
+                    this.log.debug(`Switch: Init Game ${game}:${gameName} starting on bot ${botId}.`);
                     await gameInstance.init();
                     break;
 

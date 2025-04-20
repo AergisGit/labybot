@@ -23,22 +23,23 @@ export type ChatRoomAccessVisibility = "All" | "Whitelist" | "Admin";
 
 // This should be ServerChatRoomData
 export interface API_Chatroom_Data {
-    Name: string;
-    Description: string;
-    Character: API_Character_Data[];
+    Access: ChatRoomAccessVisibility[];
     Admin: number[];
-    Ban: number[];
-    Private: boolean;
-    Access: ChatRoomAccessVisibility[]
-    Visibility: ChatRoomAccessVisibility[]
-    Limit: number;
     Background: string;
-    Locked: boolean;
-    Space: ServerChatRoomSpace;
-    BlockCategories: ServerChatRoomBlockCategory[];
+    Ban: number[];
+    BlockCategory: ServerChatRoomBlockCategory[];
+    Character?: API_Character_Data[];
+    Description: string;
     Game: ServerChatRoomGame;
     Language: ServerChatRoomLanguage;
+    Limit: number;
+    Locked?: boolean;
     MapData?: ServerChatRoomMapData;
+    Name: string;
+    Private?: boolean;
+    Space: ServerChatRoomSpace;
+    Visibility: ChatRoomAccessVisibility[];
+    Whitelist?: number[];
 }
 
 export class API_Chatroom extends EventEmitter {
@@ -85,7 +86,10 @@ export class API_Chatroom extends EventEmitter {
     }
 
     public update(data: Partial<API_Chatroom_Data>) {
+        logger.debug("Updating chatroom data with: ", data);
         Object.assign(this.data, data);
+
+        logger.debug("Updating chatroom this.data: ", this.data);
         if (data.MapData) {
             this.map.onMapUpdate();
         }

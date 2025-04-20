@@ -11,7 +11,10 @@ export abstract class GameInstance {
 
     constructor(conn: API_Connector, gameInfos: GameInfosData) {
         this.conn = conn;
-        this.log = new Logger(gameInfos.game.toUpperCase(), "debug", true, "blue");
+        try {
+            this.log = new Logger(gameInfos.game.toUpperCase(), "debug", true, "blue");
+            this.log.info(`New game instance for: ${gameInfos.game} - ${gameInfos.gameName}`);
+        } catch (e) { console.log("Init log:", e); }
         this.commandParser = new CommandParser(conn);
         this.gameInfos = gameInfos;
 

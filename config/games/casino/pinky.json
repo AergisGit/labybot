@@ -1,9 +1,9 @@
 {
     "game": "casino",
-    "gameName": "dragon",
+    "gameName": "pinky",
     "room": {
-        "Name": "The Dragon Casino",
-        "Description": "Enter the Dragon Casino! Bot operated. No refunds. No regrets. No shame.",
+        "Name": "The Pinky Casino",
+        "Description": "Enter the Pinky Casino! Bot operated.",
         "Background": "Management",
         "Private": true,
         "Locked": false,
@@ -13,10 +13,9 @@
         "BlockCategory": [],
         "Game": "",
         "Language": "EN",
-        "Admin": [197228, 189644, 186990]
+        "Admin": [197228,189644,186990]
     },
-    "botDescription": [
-        "Welcome to the Dragon Casino!",
+    "botDescription": ["Welcome to the Pinky Casino!",
         "",
         "This is a bot operated casino. You can play games, and win or lose points.",
         "",
@@ -30,11 +29,10 @@
         "!pick - Choose someone in the room who isn't the bot or yourself.",
         "",
         "This bot runs on a version of Ropeybot customized by Sophie (186990).",
-        "Ropeybot code at  https://github.com/FriendsOfBC/ropeybot"
-    ],
+        "Ropeybot code at  https://github.com/FriendsOfBC/ropeybot"],
     "mongo_db": "casino",
     "casino": {
-        "cocktail": "dragon",
+        "cocktail": "pinkpaw",
         "cocktails": [
             {
                 "id": "dragon",
@@ -49,7 +47,7 @@
                 "description": "A fuscia pink strawberry with fresh mint and sherbert. Sweet and zingy, but easily tamed with soda water."
             }
         ],
-        "forfeits": [],
-        "services": []
+        "forfeits":[],
+        "services":[]
     }
 }

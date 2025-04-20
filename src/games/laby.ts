@@ -102,7 +102,13 @@ export class Laby {
         this.triggerManager.addTriggersFromData(this.gameInfos.triggersData, this.onWalkTriggerActivated.bind(this));  // Pass callback
 
         // Mise en place initiale de la salle
-        await this.setupRoom();
+        try {
+            this.log.info("Joining room: ", this.gameInfos.room.Name);
+            await this.conn.joinOrCreateAnotherRoom(this.gameInfos.room);
+        } catch (e) {
+            this.log.error("Failed to join or create room: ", e);
+        }
+        //await this.setupRoom();
 
         // Mise à jour de la description du bot
         this.conn.setBotDescription(this.gameInfos.botDescription.join("\n"));
@@ -133,16 +139,19 @@ export class Laby {
     }
 
     private onChatRoomCreated = async () => {
+        this.log.info("Room created.");
         await this.setupRoom();
         await this.setupCharacter();
     };
 
     private onChatRoomJoined = async () => {
+        this.log.info("Room joined.");
         await this.setupCharacter();
     };
 
     private setupRoom = async () => {
         try {
+            this.log.info("Setup room...");
             this.conn.chatRoom.map.setMapFromString(this.gameInfos.map);
         } catch (e) {
             this.log.error("Map data not loaded", e);
@@ -150,6 +159,7 @@ export class Laby {
     };
 
     private setupCharacter = async () => {
+        this.log.info("Setup character...");
         this.conn.moveOnMap(this.gameInfos.botPosition.X, this.gameInfos.botPosition.Y);
         //this.conn.Player.SetActivePose(["Kneel"]);
     };

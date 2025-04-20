@@ -1,19 +1,20 @@
 {
     "game": "home",
-    "gameName": "Sophie",
+    "gameName": "sophie",
     "room": {
         "Name": "Chez Sophie",
-        "Description": "Un appartement calme",
-        "Background": "Bedroom",
-        "Private": true,
-        "Locked": false,
-        "Space": "X",
-        "Ban": [],
+        "Language": "EN",
         "Limit": 10,
+        "Description": "Un appartement calme",
+        "Admin": [197228,189644,186990],
+        "Whitelist": [],
+        "Ban": [],
+        "Background": "Bedroom",
         "BlockCategory": [],
         "Game": "",
-        "Language": "EN",
-        "Admin": [197228,189644,186990]
+        "Space": "X",
+        "Access": ["All"],
+        "Visibility":["Whitelist", "Admin"]
     },
     "map": "N4IgKgngDgpiBcICCAbA7gQwgZxAGnAEsUZdEA7Sq6m2u+6wLBBmXW32POvufe/+B/QJfAI0WPGjB7IQA85s+QBDlihTKFS2a7StVz1m1uP1DdswAvg5jYeZr96szMvWbdk4/k3bYkxMlehAGDg7QATcIjwl0MgkLFIyOjNWMChBMT/V2DU9IihSiSpcVyogq9GNJLEsoCq6vJC8psGFta29o7WgGue3r7+/oAH4YHRsfGJyYGR3uHBvrmFmZ7F2eWpjc2t6fWNzv2Dw46mk9Oz84vLq+ub27u2QDAQe+evI7fyfBAAeQAjACsYABjAAuZBAdQhkKh0JhsLh8IRiPhgBnoUKAA+hAGvQoVRSMigBBAQBwgIAEEFCgD1AABfpNCgDZAcIAGLJzFxEMAC0As5npQBD0IAmmEAVfBY0IAdI50MFDIiwpFJWFgBpAcKAJCApZFAAEwCUAODCAavgMYAr6HCvJFADToYABQA5ACXIhjeZylQkADsRQBPwAAgkpa20JQBjQN6PRiNelnYHHUrAD/A4RJdUAJCAeqqADhAIYB6+ETuX96QFCSTUMALMDQwAn4IAqYBjoXIoWwRfLFcrVer1cAEsA1huNpvNluttvtjudrsekAAXyAA=",
     "maps": [
@@ -30,7 +31,7 @@
         "/bot free - [Admins only] Immediately removes any restraints added.",
         "",
         "This bot runs on a version of Ropeybot customized by Sophie (186990).",
-        "Ropeybot code at https://github.com/FriendsOfBC/ropeybot"
+        "Ropeybot code at https://github.com/FriendsOfBC/ropeybot ."
     ],
     "triggersData":[]
 }

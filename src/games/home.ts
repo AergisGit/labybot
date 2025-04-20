@@ -15,16 +15,14 @@
 // Les imports ci-dessous servent à ce que le code sur cette page puissent utiliser du contenu d'autres fichiers du projet
 //
 //import { logger } from "../utils/logger";
-import { API_Connector, CoordObject, MessageEvent } from "../apiConnector";
+import { API_Connector, CoordObject, MessageEvent, RoomDefinition } from "../apiConnector";
 import { makeDoorRegion, MapRegion, positionEquals } from "../apiMap";
 import { API_Character } from "../apiCharacter";
 import { AssetGet, BC_AppearanceItem, API_AppearanceItem, getAssetDef } from "../item";
-import { CommandParser } from "../commandParser";
 import { BC_Server_ChatRoomMessage } from "../logicEvent";
 import { wait } from "../utils/time";
 import { GameInstance } from "./gameInstance";
 import { GameInfosData } from "@shared/types/game";
-import { E } from "../bcdata/female3DCG";
 
 // Parametrage pour la cartes
 
@@ -122,8 +120,8 @@ export class Home extends GameInstance {
         "/bot free - [Admins only] Immediately removes any restraints added.",
         "",
         "This bot runs on a version of Ropeybot customized by Sophie (186990).",
-        "Ropeybot code at https://github.com/FriendsOfBC/ropeybot",
-    ].join("\n");
+        "Ropeybot code at https://github.com/FriendsOfBC/ropeybot .",
+    ];
 
     // Variables du bot pour retenir ce qui se passe dans sa salle, relative à ce qu'on veut qu'il puisse faire
     private enteredTheHouse = new Set<number>(); // Liste des personnes étant déjà entrées dans la maison
@@ -136,8 +134,12 @@ export class Home extends GameInstance {
     // Elle construit la classe avec des parametre par défaut, et des éléments déclancheurs, avant son initialisation
     public constructor(conn: API_Connector, gameInfos: GameInfosData, private superusers: number[]) {
         super(conn, gameInfos);
+
+        this.conn = conn;
         //this.commandParser = new CommandParser(this.conn);
 
+
+        this.log.debug("commandParser init...");
         // Déclancheurs via vommandes texte, reçues apres "/bot "
         this.commandParser.register("who", this.onCommandResidents);
         this.commandParser.register("free", this.onCommandFree);
@@ -145,9 +147,12 @@ export class Home extends GameInstance {
         this.commandParser.register("reset", this.onCommandReset);
         this.commandParser.register("debug", this.onCommandDebug);
 
-        // Mise à jour de la description du bot
-        this.conn.setBotDescription(this.description);
 
+        this.log.debug("Bot description init...");
+        // Mise à jour de la description du bot
+        this.conn.setBotDescription(this.description.join("\n"));
+
+        this.log.debug("Listeners init...");
         // Déclancheur sur reception d'un message peut importe son contenu
         conn.on("Message", this.onMessage);
 
@@ -157,6 +162,31 @@ export class Home extends GameInstance {
 
         // Déclancheurs via arrivée d'un personnage sur des coordonnées
 
+        this.log.debug("Constructor : finished.");
+    }
+
+
+    // Cette fonction d'initalisation est appelée après la constructeur
+    public async init(): Promise<void> {
+        super.init();
+
+        // Init variables
+        this.secretRoomOpen = false;
+        this.secretGardenOpen = false;
+
+        // Mise en place initiale de la salle
+        try {
+            this.log.info("Joining room: ", this.gameInfos.room.Name);
+            await this.conn.joinOrCreateAnotherRoom(this.gameInfos.room);
+        } catch (e) {
+            this.log.error("Failed to join or create room: ", e);
+        }
+        await this.setupRoom();
+
+        // Setup character for this room (position, clothes, etc.)
+        await this.setupCharacter();
+
+        this.log.debug("Triggers init...");
         // Déclancheurs pour des descriptions d'objets
         this.conn.chatRoom.map.addTileTrigger(EXHIBIT_1, this.onCharacterViewExhibit1);
         this.conn.chatRoom.map.addTileTrigger(EXHIBIT_2, this.onCharacterViewExhibit2);
@@ -190,21 +220,6 @@ export class Home extends GameInstance {
         this.conn.chatRoom.map.addEnterRegionTrigger(makeDoorRegion(COMMON_AREA_TO_RECEPTION_DOOR, true, false), this.onCharacterApproachCommonAreaToReceptionDoor);
         this.conn.chatRoom.map.addLeaveRegionTrigger(makeDoorRegion(COMMON_AREA_TO_RECEPTION_DOOR, true, false), this.onCharacterLeaveCommonAreaToReceptionDoor);
 
-    }
-
-
-    // Cette fonction d'initalisation est appelée après la constructeur
-    public async init(): Promise<void> {
-
-        // initialisation des variables
-        this.secretRoomOpen = false;
-        this.secretGardenOpen = false;
-
-        // Mise en place initiale de la salle
-        await this.setupRoom();
-
-        // Actions qu'on souhaite que le personnage du bot fasse en entrant dans la pièce
-        await this.setupCharacter();
     }
 
     // Cette fonction d'arrêt est appelée avant la destruction de la classe
@@ -256,13 +271,33 @@ export class Home extends GameInstance {
     // Ici on ne met à jour que la MAP, mais on pourrait ouvrir, fermer, choisir le nombre de places, changer la whitelist, etc.
     protected setupRoom = async () => {
         try {
+            const roomInfos: RoomDefinition = {
+                Access: this.gameInfos.room.Access,
+                Admin: this.gameInfos.room.Admin,
+                Background: this.gameInfos.room.Background,
+                Ban: this.gameInfos.room.Ban,
+                BlockCategory: this.gameInfos.room.BlockCategory,
+                Description: this.gameInfos.room.Description,
+                Game: this.gameInfos.room.Game,
+                Language: this.gameInfos.room.Language,
+                Limit: this.gameInfos.room.Limit,
+                Name: this.gameInfos.room.Name,
+                Space: this.gameInfos.room.Space,
+                Visibility: this.gameInfos.room.Visibility,
+                Whitelist: []
+            };
+            this.log.debug("Updating room with roomInfos: ");
+            await wait(2000);
+            this.conn.updateRoom(roomInfos);
+            
             // Chargement de la carte, en fonction de si la secretRoom doti etre ouverte ou non
             if (this.secretRoomOpen === true) {
                 this.conn.chatRoom.map.setMapFromString(MAPBatCave);
             } else {
                 this.conn.chatRoom.map.setMapFromString(MAP);
             }
-
+            
+            
         } catch (e) {
             this.log.warn("Map data not loaded", e);
         }

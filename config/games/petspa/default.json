@@ -14,5 +14,15 @@
         "Game": "",
         "Language": "EN",
         "Admin": [197228, 189644, 186990]
-    }
+    },
+    "botDescription": [
+        "This is an example to show how to use the ropeybot API to create a simple game.",
+        "Commands:",
+        "",
+        "/bot residents - List the current residents of the spa",
+        "/bot freeandleave - Immediately removes any restraints added and kicks you from the room",
+        "",
+        "This bot runs on a version of Ropeybot customized by Sophie (186990).",
+        "Code at https://github.com/FriendsOfBC/ropeybot"
+    ]
 }

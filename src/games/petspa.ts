@@ -20,6 +20,8 @@ import { AssetGet, BC_AppearanceItem } from "../item";
 import { CommandParser } from "../commandParser";
 import { BC_Server_ChatRoomMessage } from "../logicEvent";
 import { remainingTimeString, wait } from "../utils/time";
+import { Logger } from '../utils/logger';
+import { GameInfosData } from "@shared/types/game";
 
 const RECEPTION_AREA: MapRegion = {
     TopLeft: { X: 13, Y: 11 },
@@ -70,62 +72,35 @@ export const PET_EARS: BC_AppearanceItem = {
 };
 
 export class PetSpa {
-    private description = [
-        "This is an example to show how to use the ropeybot API to create a simple game.",
-        "Commands:",
-        "",
-        "/bot resisdents - List the current residents of the spa",
-        "/bot freeandleave - Immediately removes any restraints added and kicks you from the room",
-        "Code at https://github.com/FriendsOfBC/ropeybot",
-    ].join("\n");
+    public log: Logger;
+    private commandParser: CommandParser;
+    private gameInfos: GameInfosData;
 
     private exitTime = new Map<number, number>();
     private earsAdded = new Set<number>();
     private tailAdded = new Set<number>();
 
-    private commandParser: CommandParser;
-
-    public constructor(private conn: API_Connector) {
-        this.conn.setBotDescription(this.description);
+    public constructor(private conn: API_Connector, gameInfos: GameInfosData) {
+        this.log = new Logger('PSPA', 'debug', true, 'green');
+        this.log.info("Dare instance created");
         
         this.commandParser = new CommandParser(this.conn);
-
+        this.gameInfos = gameInfos;
 
         this.conn.on("RoomCreate", this.onChatRoomCreated);
         this.conn.on("RoomJoin", this.onChatRoomJoined);
 
         conn.on("Message", this.onMessage);
 
-        this.conn.chatRoom.map.addTileTrigger(
-            EXHIBIT_1,
-            this.onCharacterViewExhibit1,
-        );
-        this.conn.chatRoom.map.addTileTrigger(
-            EXHIBIT_2,
-            this.onCharacterViewExhibit2,
-        );
-        this.conn.chatRoom.map.addTileTrigger(
-            EXHIBIT_3,
-            this.onCharacterViewExhibit3,
-        );
-        this.conn.chatRoom.map.addTileTrigger(
-            EXHIBIT_4,
-            this.onCharacterViewExhibit4,
-        );
+        this.conn.chatRoom.map.addTileTrigger(EXHIBIT_1,this.onCharacterViewExhibit1);
+        this.conn.chatRoom.map.addTileTrigger(EXHIBIT_2,this.onCharacterViewExhibit2);
+        this.conn.chatRoom.map.addTileTrigger(EXHIBIT_3,this.onCharacterViewExhibit3);
+        this.conn.chatRoom.map.addTileTrigger(EXHIBIT_4,this.onCharacterViewExhibit4);
 
-        this.conn.chatRoom.map.addTileTrigger(
-            DRESSING_PAD,
-            this.onCharacterEnterDressingPad,
-        );
-        this.conn.chatRoom.map.addTileTrigger(
-            REDRESSING_PAD,
-            this.onCharacterEnterRedressingPad,
-        );
+        this.conn.chatRoom.map.addTileTrigger(DRESSING_PAD,this.onCharacterEnterDressingPad);
+        this.conn.chatRoom.map.addTileTrigger(REDRESSING_PAD,this.onCharacterEnterRedressingPad);
 
-        this.conn.chatRoom.map.addEnterRegionTrigger(
-            RECEPTION_AREA,
-            this.onCharacterEnterReception,
-        );
+        this.conn.chatRoom.map.addEnterRegionTrigger(RECEPTION_AREA,this.onCharacterEnterReception);
 
         this.conn.chatRoom.map.addEnterRegionTrigger(
             makeDoorRegion(HALLWAY_TO_PET_AREA_DOOR, true, false),
@@ -150,8 +125,40 @@ export class PetSpa {
     }
 
     public async init(): Promise<void> {
+        this.conn.setBotDescription(this.gameInfos.botDescription.join("\n"));
+
+        // Mise en place initiale de la salle
+        try {
+            this.log.info("Joining room: ", this.gameInfos.room.Name);
+            await this.conn.joinOrCreateAnotherRoom(this.gameInfos.room);
+        } catch (e) {
+            this.log.error("Failed to join or create room: ", e);
+        }
+
         await this.setupRoom();
         await this.setupCharacter();
+    }
+
+    public async stop(): Promise<void> {
+        this.log.info(`Stopping game: ${this.gameInfos.game}`);
+        this.commandParser.stop();
+        
+        this.conn.chatRoom.map.removeTileTrigger(EXHIBIT_1.X, EXHIBIT_1.Y, this.onCharacterViewExhibit1);
+        this.conn.chatRoom.map.removeTileTrigger(EXHIBIT_2.X, EXHIBIT_2.Y, this.onCharacterViewExhibit2);
+        this.conn.chatRoom.map.removeTileTrigger(EXHIBIT_3.X, EXHIBIT_3.Y, this.onCharacterViewExhibit3);
+        this.conn.chatRoom.map.removeTileTrigger(EXHIBIT_4.X, EXHIBIT_4.Y, this.onCharacterViewExhibit4);
+        this.conn.chatRoom.map.removeTileTrigger(DRESSING_PAD.X, DRESSING_PAD.Y, this.onCharacterEnterDressingPad);
+        this.conn.chatRoom.map.removeTileTrigger(REDRESSING_PAD.X, REDRESSING_PAD.Y, this.onCharacterEnterRedressingPad);
+        
+        this.conn.chatRoom.map.removeEnterRegionTrigger(this.onCharacterEnterReception);
+        this.conn.chatRoom.map.removeEnterRegionTrigger(this.onCharacterApproachHallwayToPetAreaDoor);
+        this.conn.chatRoom.map.removeEnterRegionTrigger(this.onCharacterApproachCommonAreaToReceptionDoor);
+        
+        this.conn.chatRoom.map.removeLeaveRegionTrigger(this.onCharacterLeaveHallwayToPetAreaDoor);
+        this.conn.chatRoom.map.removeLeaveRegionTrigger(this.onCharacterLeaveCommonAreaToReceptionDoor);
+
+        // wait any unresolved events to be finished
+        await wait(2000);
     }
 
     private onChatRoomCreated = async () => {

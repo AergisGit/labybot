@@ -13,20 +13,21 @@
  */
 
 import { Db } from "mongodb";
-import { Logger } from '../utils/logger';
-import { API_Connector } from "../apiConnector";
-import { CommandParser } from "../commandParser";
-import { RouletteBet, RouletteGame, ROULETTEHELP } from "./casino/roulette";
-import { API_Character, ItemPermissionLevel } from "../apiCharacter";
+import { GameInfosData } from "@shared/types/game";
 import { BC_Server_ChatRoomMessage, TBeepType } from "../logicEvent";
+import { API_Connector } from "../apiConnector";
+import { API_Character, ItemPermissionLevel } from "../apiCharacter";
+import { API_AppearanceItem, AssetGet, BC_AppearanceItem } from "../item";
+import { importBundle } from "../appearance";
+import { CommandParser } from "../commandParser";
+import { Logger } from '../utils/logger';
+import { remainingTimeString, wait } from "../utils/time";
+import { generatePassword } from "../utils/string";
+import { RouletteBet, RouletteGame, ROULETTEHELP } from "./casino/roulette";
 import { CasinoStore, Player } from "./casino/casinostore";
 import { ROULETTE_WHEEL } from "./casino/rouletteWheelBundle";
-import { API_AppearanceItem, AssetGet, BC_AppearanceItem } from "../item";
-import { remainingTimeString, wait } from "../utils/time";
-import { importBundle } from "../appearance";
 import { FORFEITS, forfeitsString, restraintsRemoveString, SERVICES, servicesString } from "./casino/forfeits";
 import { Cocktail, COCKTAILS } from "./casino/cocktails";
-import { generatePassword } from "../utils/string";
 
 const FREE_CHIPS = 20;
 const TIME_UNTIL_SPIN_MS = 60000;
@@ -91,8 +92,11 @@ type rouletteState = "WaitForBet" | "BetsGoing" | "Spinning" | "Resetting" | "St
 
 export class Casino {
     public log: Logger;
-    private rouletteGame: RouletteGame;
     private commandParser: CommandParser;
+    private gameInfos: GameInfosData;
+
+    // Casino stuff
+    private rouletteGame: RouletteGame;
     private store: CasinoStore;
     private willSpinAt: number | undefined;
     private spinTimeout: NodeJS.Timeout | undefined;
@@ -105,18 +109,19 @@ export class Casino {
     public constructor(
         private conn: API_Connector,
         db: Db,
-        config?: CasinoConfig,
+        gameInfos: GameInfosData
     ) {
         this.log = new Logger('CASI', 'debug', true, 'green');
         this.log.info("Casino instance created");
         this.rouletteGame = new RouletteGame(conn);
         this.store = new CasinoStore(db);
         this.commandParser = new CommandParser(conn);
+        this.gameInfos = gameInfos;
 
-        if (config?.cocktail) {
-            this.cocktailOfTheDay = COCKTAILS[config.cocktail];
+        if (this.gameInfos.casino?.cocktail) {
+            this.cocktailOfTheDay = COCKTAILS[this.gameInfos.casino.cocktail];
             if (this.cocktailOfTheDay === undefined) {
-                throw new Error(`Unknown cocktail: ${config.cocktail}`);
+                throw new Error(`Unknown cocktail: ${this.gameInfos.casino.cocktail}`);
             }
         }
 
@@ -175,6 +180,14 @@ export class Casino {
     }
 
     public async init(): Promise<void> {
+        // Mise en place initiale de la salle
+        try {
+            this.log.info("Joining room: ", this.gameInfos.room.Name);
+            await this.conn.joinOrCreateAnotherRoom(this.gameInfos.room);
+        } catch (e) {
+            this.log.error("Failed to join or create room: ", e);
+        }
+
         if (!this.conn.chatRoom || !this.conn.chatRoom.characters) {
             this.log.error("Chat room or characters list is not available.");
             return;
@@ -271,11 +284,12 @@ export class Casino {
         await new Promise((resolve) => setTimeout(resolve, 2000));
 
         // Log or notify that the casino has been stopped
-        this.conn.SendMessage("Chat",`Deer players, the casino is now closed. Thanks for playing!`);
-
-        const sign = this.getSign();
-        sign.setProperty("Text","Closed",);
-        sign.setProperty("Text2", "");
+        this.conn.SendMessage("Chat", `Deer players, the casino is now closed. Thanks for playing!`);
+        
+        // Remove the wheel, sign and the script that makes the character mostly invisible
+        this.conn.Player.Appearance.RemoveItem("ItemDevices");
+        this.conn.Player.Appearance.RemoveItem("ItemMisc");
+        this.conn.Player.Appearance.RemoveItem("ItemScript");
 
         this.log.info("Casino has been stopped and all resources have been released.");
     }
@@ -954,3 +968,4 @@ export class Casino {
         }
     };
 }
+

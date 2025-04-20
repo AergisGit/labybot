@@ -44,11 +44,12 @@ export interface RoomDefinition {
     Space: ServerChatRoomSpace;
     Admin: number[];
     Ban: number[];
-    Limit: number | string;
+    Limit: number;
     BlockCategory: ServerChatRoomBlockCategory[];
     Game: ServerChatRoomGame;
     Language: ServerChatRoomLanguage;
     MapData?: ServerChatRoomMapData;
+    Whitelist?: number[];
 }
 
 export interface SingleItemUpdate extends BC_AppearanceItem {
@@ -247,7 +248,11 @@ export class API_Connector extends EventEmitter {
     }
 
     public ChatRoomUpdate(update: Record<string, any>): void {
+        logger.debug("ChatRoomUpdate....");
+        logger.debug("Will update chat room with: ", update);
         this.chatRoom.update(update);
+        logger.debug("this.chatRoom.ToInfo(): ", this.chatRoom.ToInfo());
+
         const payload = {
             Action: "Update",
             MemberNumber: 0,
@@ -256,9 +261,9 @@ export class API_Connector extends EventEmitter {
                 //...update,
             },
         } as ChatRoomAdmin;
-        if (payload.Room.Limit !== undefined)
-            payload.Room.Limit = payload.Room.Limit + "";
-        logger.log("Updating chat room", payload);
+        //if (payload.Room.Limit !== undefined)
+        //    payload.Room.Limit = payload.Room.Limit;
+        logger.debug("Updating chat room", payload);
         this.chatRoomAdmin(payload);
     }
 
@@ -370,7 +375,7 @@ export class API_Connector extends EventEmitter {
             Admin: resp.Admin,
             Ban: resp.Ban,
             Limit: resp.Limit,
-            BlockCategory: resp.BlockCategories,
+            BlockCategory: resp.BlockCategory,
             Game: resp.Game,
             Language: resp.Language,
         };
@@ -416,7 +421,7 @@ export class API_Connector extends EventEmitter {
         this.roomJoined.Visibility = resp.Visibility;
         this.roomJoined.Ban = resp.Ban;
         this.roomJoined.Limit = resp.Limit;
-        this.roomJoined.BlockCategory = resp.BlockCategories;
+        this.roomJoined.BlockCategory = resp.BlockCategory;
         this.roomJoined.Game = resp.Game;
         this.roomJoined.Name = resp.Name;
         this.roomJoined.Description = resp.Description;
@@ -657,27 +662,76 @@ export class API_Connector extends EventEmitter {
         }
     }
 
-    public ChatRoomLeave() {
+    public async joinOrCreateAnotherRoom(roomDef: RoomDefinition): Promise<boolean> {
+        await this.loggedIn.prom;
+        let roomsFound: RoomDefinition[] = [];
+
+        // if we're in a room, we need to leave it first
+        if (this._player.chatRoom) {
+            logger.log("Already in a room, leaving the current room...");
+            roomsFound = await this.ChatRoomLeave();
+        } else {
+            logger.log("Not in a room, looking for room: '", roomDef.Name, "'");
+            roomsFound = await this.searchRooms(roomDef.Name);
+        }
+        // we are now hopefully in no room
+        //    we should search for the room we want, to see if we create or join it.
+        logger.debug("Room(s) found: ", roomsFound);
+
+        logger.log("Looking for our room: ", roomDef.Name);
+        for (const room of roomsFound) {
+            if (room.Name === roomDef.Name) {
+                logger.log("Found room: ", roomDef.Name);
+                logger.log("Trying to join...");
+                const joinResult = await this.ChatRoomJoin(roomDef.Name);
+                if (joinResult) return true;
+                else {
+                    logger.warn("Failed to join the room: ", roomDef.Name);
+                    //return false;
+                    break;
+                }
+            }
+        }
+
+        // if we get here, we didn't find the room, so we need to create it
+        logger.warn("Didn't found room to join, trying to create: ", roomDef.Name);
+        const createResult = await this.ChatRoomCreate(roomDef);
+        if (createResult) return true;
+        else {
+            logger.error("Failed to create the room: ", roomDef.Name);
+            return false;
+        }
+    }
+
+    // leave the current room and search the list of rooms, as a player would
+    public async ChatRoomLeave(): Promise<RoomDefinition[]> {
         this.roomSynced = new PromiseResolve<void>();
         this.wrappedSock.emit("ChatRoomLeave", "");
         this.roomJoined = undefined;
+        return await this.searchRooms("");
     }
 
-    private searchRooms(
-        q: string,
-        space: ServerChatRoomSpace,
+    private async searchRooms(
+        query: string,
+        language: string = "",
+        space: ServerChatRoomSpace = "X",
+        game: string = "",
+        fullRooms: boolean = true,
+        showLocked: boolean = true
     ): Promise<RoomDefinition[]> {
-        if (this.roomSearchPromise) return this.roomSearchPromise.prom;
+        if (this.roomSearchPromise) return await this.roomSearchPromise.prom;
 
         this.roomSearchPromise = new PromiseResolve();
         this.wrappedSock.emit("ChatRoomSearch", {
-            Query: q,
-            Language: "",
+            Query: query.toUpperCase(),
+            Language: language,
             Space: space,
-            FullRooms: true,
+            Game: game,
+            FullRooms: fullRooms,
+            ShowLocked: showLocked
         });
 
-        return this.roomSearchPromise.prom;
+        return await this.roomSearchPromise.prom;
     }
 
     private async start(): Promise<void> {
@@ -699,10 +753,17 @@ export class API_Connector extends EventEmitter {
         });
     }
 
-    public setBotDescription(desc: string) {
-        this.accountUpdate({
-            Description: LZSTRING_MAGIC + compressToUTF16(desc),
-        });
+    public async setBotDescription(desc: string) {
+        await this.loggedIn.prom;
+        logger.debug("setBotDescription: ", desc);
+        try {
+            this.accountUpdate({
+                Description: LZSTRING_MAGIC + compressToUTF16(desc),
+            });
+        } catch (e) {
+
+            logger.error("setBotDescription: ", e);
+        }
     }
 
     public setScriptPermissions(hide: boolean, block: boolean): void {
@@ -737,6 +798,40 @@ export class API_Connector extends EventEmitter {
     public updateCharacter(update: Partial<API_Character_Data>): void {
         logger.log("sending ChatRoomCharacterUpdate", JSON.stringify(update));
         this.wrappedSock.emit("ChatRoomCharacterUpdate", update);
+    }
+
+
+    public updateRoom(roomDef: Partial<RoomDefinition>): void {
+        logger.log("sending ChatRoomAdmin", JSON.stringify(roomDef));
+        /*
+                const payload = {
+                    Action: "Update",
+                    MemberNumber: 0,
+                    Room: {
+                        ...roomDef,
+                        //...update,
+                    },
+                } as ChatRoomAdmin;
+
+                interface ChatRoomAdmin {
+                    Action: "Update" | "MoveLeft" | "MoveRight" | "Kick";
+                    MemberNumber?: number;
+                    Publish?: boolean;
+                    Room?: Partial<RoomDefinition>;
+}
+        */
+        try {
+            this.wrappedSock.emit("ChatRoomAdmin", {
+                Action: "Update",
+                MemberNumber: 0,
+                Room: {
+                    ...roomDef,
+                    //...update,
+                }
+            } as ChatRoomAdmin,);
+        } catch (e) {
+            logger.error("updateRoom: ", e);
+        }
     }
 
     public characterPoseUpdate(pose: AssetPoseName[]): void {

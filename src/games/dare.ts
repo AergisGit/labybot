@@ -18,55 +18,61 @@ import { CommandParser } from "../commandParser";
 import { wait } from "../utils/time";
 import { API_Character } from "../apiCharacter";
 import { BC_Server_ChatRoomMessage } from "../logicEvent";
+import { Logger } from '../utils/logger';
+import { GameInfosData } from "@shared/types/game";
 
-export class Dare {
-    private description = `Dares
- =====
-
-Collects dare / forfeit cards privately & anonymously that can then be drawn.
-
-!dare add <dare>
-eg. !dare add take off one item of clothing
-(This should be whispered to the bot so your dare stays secret!)
-
-!dare draw
-Draws a dare card (you can do this in the public room)
-
-!pick
-Chooses someone in the room who isn't the bot or yourself (for dares that involve someone else)
-
-Rules
-=====
-1. Everyone rolls a d100 (/dice 100) to start and placed in the room from lowest to highest.
-2. Players take turns to draw a dare, from left to right.
-3. Dares last 10 minutes unless the dare says otherwise.
-4. For dares involving someone else, spin the wheel to decide who. Re-spin if they're already a
-   target for a dare.
-5. If you're writing a dare that involves someone else, you can let the person doing the dare pick
-   someone or have them spin the bot wheel to choose. Your dare can't involve another specific,
-   named person (eg. you can say, "tie a random person", you can't say, "tie Deya").
-6. No "free pass" cards: 'cos skipping a turn is boring!
-`;
-
+export class Dare { 
+    public log: Logger;
     private commandParser: CommandParser;
+    private conn: API_Connector
+    private gameInfos: GameInfosData;
 
     private allDares: string[];
     private unusedDares: string[];
 
-    public constructor(private conn: API_Connector) {
+    public constructor(conn: API_Connector, gameInfos: GameInfosData) {
+        this.log = new Logger('DARE', 'debug', true, 'green');
+        this.log.info("Dare instance created");
+
         this.commandParser = new CommandParser(conn);
+        this.conn = conn
+        this.gameInfos = gameInfos;
+    }
+
+    public async init(): Promise<void> {
+
+        // Mise en place initiale de la salle
+        try {
+            this.log.info("Joining room: ", this.gameInfos.room.Name);
+            await this.conn.joinOrCreateAnotherRoom(this.gameInfos.room);
+        } catch (e) {
+            this.log.error("Failed to join or create room: ", e);
+        }
 
         this.commandParser.register("pick", this.onPick);
         this.commandParser.register("dare", this.onDare);
+
         this.loadDares();
 
         this.conn.accountUpdate({ Nickname: "Dare Bot" });
-        this.conn.setBotDescription(this.description);
-        
+        this.conn.setBotDescription(this.gameInfos.botDescription.join("\n"));
     }
 
+
+    public async stop(): Promise<void> {
+        this.log.info(`Stopping game: ${this.gameInfos.game}`);
+        this.commandParser.stop();
+        
+        this.conn.accountUpdate({ Nickname: "" });
+        this.allDares = [];
+        
+        // wait any unresolved events to be finished
+        await wait(2000);
+    }
+
+
     private async loadDares(): Promise<void> {
-        let result;
+        let result: string;
 
         try {
             result = await readFile("dares.json", "utf-8");

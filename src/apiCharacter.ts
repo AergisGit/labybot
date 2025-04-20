@@ -32,7 +32,7 @@ interface PoseObject {
 }
 
 interface SingleScriptPermission {
-    permission: 1|0;
+    permission: 1 | 0;
 }
 
 interface ScriptPermissionsType {
@@ -202,9 +202,9 @@ export class API_Character {
         });
     }
 
-    public Ban(): void {}
+    public Ban(): void { }
 
-    public Demote(): void {}
+    public Demote(): void { }
 
     public IsBot(): boolean {
         return this.data.MemberNumber === this.connection.Player.MemberNumber;
@@ -244,8 +244,8 @@ export class API_Character {
         // See above
         return !Boolean(
             this.Appearance.InventoryGet("ItemMouth") ||
-                this.Appearance.InventoryGet("ItemMouth2") ||
-                this.Appearance.InventoryGet("ItemMouth3"),
+            this.Appearance.InventoryGet("ItemMouth2") ||
+            this.Appearance.InventoryGet("ItemMouth3"),
         );
     }
 
@@ -309,6 +309,47 @@ export class API_Character {
     }
 
     public sendItemUpdate(data: BC_AppearanceItem): void {
+        logger.debug("CHAR sendItemUpdate");
+
+        logger.debug("groupe :", data.Group);
+        logger.debug("name :", data.Name);
+        logger.debug("color :", data.Color);
+        logger.debug("difficulty :", data.Difficulty);
+        logger.debug("craft :", data.Craft);
+        logger.debug("property :", data.Property);
+
+        // update local  apearance
+        // Find the element index in the Appearance array
+        const existingIndex = this.data.Appearance.findIndex(
+            (item) => item.Group === data.Group
+        );
+
+        if (existingIndex !== -1) {
+            // debug before
+            //logger.debug(`Before update: Existing item in group ${data.Group}:`,JSON.stringify(this.data.Appearance[existingIndex], null, 2));
+
+            // Update existing element
+            this.data.Appearance[existingIndex] = {
+                ...this.data.Appearance[existingIndex], // Keep existing fields
+                ...data, // apply new data
+                Property: {
+                    ...this.data.Appearance[existingIndex].Property, // Keep existing fields
+                    ...data.Property, // apply new data
+                },
+            };
+            // debug after
+            //logger.debug(`After update: Updated item in group ${data.Group}:`,JSON.stringify(this.data.Appearance[existingIndex], null, 2));
+        } else {
+            // debug
+            //logger.debug(`No existing item in group ${data.Group}, adding new item:`,JSON.stringify(data, null, 2));
+            // Add new element if none exist for this group
+            this.data.Appearance.push(data);
+        }
+
+        // Rebuild local appearance
+        this.rebuildAppearance();
+
+
         this.connection.updateCharacterItem({
             Target: this.MemberNumber,
             ...data,
@@ -316,18 +357,34 @@ export class API_Character {
     }
 
     public sendAppearanceUpdate(): void {
+        logger.debug("CHAR sendAppearanceUpdate");
+
         this.connection.updateCharacter({
             ID: this.data.ID,
             Appearance: this.data.Appearance,
         });
+        this.rebuildAppearance();
     }
 
     public update(data: Partial<API_Character_Data>): void {
+        logger.debug("CHAR update");
+
+        // Log the current names in the Appearance array before the update
+        if (this.data.Appearance) {
+            logger.debug("Before update: Current Appearance Names:",this.data.Appearance.map((item) => item.Name));
+        }
+
+        // Log the updated names in the Appearance array after the update
+        if (this.data.Appearance) {
+        logger.debug("After update: Updated Appearance Names:",this.data.Appearance.map((item) => item.Name));
+    }
+
         Object.assign(this.data, data);
         this.rebuildAppearance();
     }
 
     public rebuildAppearance(): void {
+        logger.debug("CHAR rebuildAppearance");
         this._appearance = new AppearanceType(this, this.data);
     }
 }

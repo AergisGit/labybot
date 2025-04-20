@@ -1,15 +1,15 @@
 {
     "game": "casino",
-    "gameName": "dragon",
+    "gameName": "sophie",
     "room": {
-        "Name": "The Dragon Casino",
+        "Name": "Chez Sophie",
         "Language": "EN",
         "Limit": 10,
-        "Description": "Enter the Dragon Casino! Bot operated. No refunds. No regrets. No shame.",
+        "Description": "Un appartement calme, avec une roulette de casino.",
         "Admin": [197228,189644,186990],
         "Whitelist": [],
         "Ban": [],
-        "Background": "Management",
+        "Background": "Bedroom",
         "BlockCategory": [],
         "Game": "",
         "Space": "X",
@@ -17,7 +17,7 @@
         "Visibility":["Whitelist", "Admin"]
     },
     "botDescription": [
-        "Welcome to the Dragon Casino!",
+        "Welcome to the Home Casino!",
         "",
         "This is a bot operated casino. You can play games, and win or lose points.",
         "",
@@ -48,6 +48,12 @@
                 "name": "Pink Paw",
                 "colour": "#C65F9E",
                 "description": "A fuscia pink strawberry with fresh mint and sherbert. Sweet and zingy, but easily tamed with soda water."
+            },
+            {
+                "id": "mojito",
+                "name": "Mojito",
+                "colour": "#86a86e",
+                "description": "A classic Mojito."
             }
         ],
         "forfeits": [],

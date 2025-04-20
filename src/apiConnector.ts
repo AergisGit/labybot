@@ -15,7 +15,8 @@
 import { io } from "socket.io-client";
 import { logger } from './utils/logger';
 import { API_Character, API_Character_Data, ItemPermissionLevel } from "./apiCharacter";
-import { API_Chatroom, API_Chatroom_Data, ChatRoomAccessVisibility } from "./apiChatroom";
+import { API_Chatroom, ChatRoomAccessVisibility } from "./apiChatroom";
+import { API_Chatroom_Data } from "@shared/types/bc";
 import { Socket } from "socket.io-client";
 import { API_AppearanceItem, BC_AppearanceItem } from "./item";
 import { compressToUTF16 } from "lz-string";
@@ -102,7 +103,7 @@ interface ChatRoomAdmin {
     Action: "Update" | "MoveLeft" | "MoveRight" | "Kick";
     MemberNumber?: number;
     Publish?: boolean;
-    Room?: Partial<RoomDefinition>;
+    Room?: Partial<API_Chatroom_Data>;
 }
 
 export interface MessageEvent {
@@ -126,14 +127,14 @@ export class API_Connector extends EventEmitter {
     public _chatRoom?: API_Chatroom;
 
     private started = false;
-    private roomJoined: RoomDefinition;
+    private roomJoined: API_Chatroom_Data;
 
     private loggedIn = new PromiseResolve<void>();
     private roomSynced = new PromiseResolve<void>();
 
     private roomJoinPromise: PromiseResolve<string>;
     private roomCreatePromise: PromiseResolve<string>;
-    private roomSearchPromise: PromiseResolve<RoomDefinition[]>; // (type not quite right: has 'Creator', MemberCount, MemberLimit)
+    private roomSearchPromise: PromiseResolve<API_Chatroom_Data[]>; // (type not quite right: has 'Creator', MemberCount, MemberLimit)
     private onlineFriendsPromise: PromiseResolve<OnlineFriendResult[]>;
     private itemAllowQueries = new Map<
         number,
@@ -155,7 +156,7 @@ export class API_Connector extends EventEmitter {
                 ? "https://www.bondageprojects.elementfx.com"
                 : "http://localhost:7777";
 
-        logger.log(`Connecting to ${this.url} with origin ${origin}`);
+        logger.info(`Connecting to ${this.url} with origin ${origin}`);
         this.sock = io(this.url, {
             transports: ["websocket"],
             extraHeaders: {
@@ -225,7 +226,7 @@ export class API_Connector extends EventEmitter {
             logger.warn("Message too long, truncating");
             msg = msg.substring(0, 1000);
         }
-        logger.log(`Sending ${type}`, msg);
+        logger.info(`Sending ${type}`, msg);
 
         const payload = { Type: type, Content: msg } as Record<string, any>;
         if (target) payload.Target = target;
@@ -249,9 +250,9 @@ export class API_Connector extends EventEmitter {
 
     public ChatRoomUpdate(update: Record<string, any>): void {
         logger.debug("ChatRoomUpdate....");
-        logger.debug("Will update chat room with: ", update);
+        //logger.debug("Will update chat room with: ", update);
         this.chatRoom.update(update);
-        logger.debug("this.chatRoom.ToInfo(): ", this.chatRoom.ToInfo());
+        //logger.debug("this.chatRoom.ToInfo(): ", this.chatRoom.ToInfo());
 
         const payload = {
             Action: "Update",
@@ -263,7 +264,7 @@ export class API_Connector extends EventEmitter {
         } as ChatRoomAdmin;
         //if (payload.Room.Limit !== undefined)
         //    payload.Room.Limit = payload.Room.Limit;
-        logger.debug("Updating chat room", payload);
+        //logger.debug("Updating chat room", payload);
         this.chatRoomAdmin(payload);
     }
 
@@ -300,7 +301,7 @@ export class API_Connector extends EventEmitter {
     }
 
     private onSocketConnect = async () => {
-        logger.log("Socket connected! Now logging in...");
+        logger.info("Socket connected! Now logging in...");
         this.wrappedSock.emit("AccountLogin", {
             AccountName: this.username,
             Password: this.password,
@@ -314,11 +315,11 @@ export class API_Connector extends EventEmitter {
     };
 
     private onSocketReconnect = () => {
-        logger.log("Socket reconnected");
+        logger.info("Socket reconnected");
     };
 
     private onSocketReconnectAttempt = () => {
-        logger.log("Socket reconnect attempt");
+        logger.info("Socket reconnect attempt");
     };
 
     private onSocketDisconnect = () => {
@@ -330,9 +331,9 @@ export class API_Connector extends EventEmitter {
     private onServerInfo = (info: any) => {
         if (info.Time) {
             const formattedTime = new Date(info.Time).toISOString().replace("T", " ").split(".")[0];
-            logger.log("Server info:", { ...info, Time: formattedTime });
+            logger.info("Server info:", { ...info, Time: formattedTime });
         } else {
-            logger.log("Server info:", info);
+            logger.info("Server info:", info);
         }
         this.emit('serverInfo', info); // Re-emit the event, I'll catch it in GameManager
     };
@@ -343,22 +344,22 @@ export class API_Connector extends EventEmitter {
             this.emit("LoginError", resp);
             return;
         }*/
-        //logger.log("Got login response", resp);
+        //logger.info("Got login response", resp);
         this._player = new API_Character(resp, this, undefined);
         this.loggedIn.resolve();
     };
 
     private onChatRoomCreateResponse = (resp: string) => {
-        logger.log("Got chat room create response", resp);
+        logger.info("Got chat room create response", resp);
         this.roomCreatePromise.resolve(resp);
     };
 
     private onChatRoomUpdateResponse = (resp: any) => {
-        logger.log("Got chat room update response", resp);
+        logger.info("Got chat room update response", resp);
     };
 
     private onChatRoomSync = (resp: API_Chatroom_Data) => {
-        //logger.log("Got chat room sync", resp);
+        //logger.info("Got chat room sync", resp);
         if (!this._chatRoom) {
             this._chatRoom = new API_Chatroom(resp, this, this._player);
         } else {
@@ -382,7 +383,7 @@ export class API_Connector extends EventEmitter {
     };
 
     private onChatRoomSyncMemberJoin = (resp: any) => {
-        logger.log("Chat room member joined", resp.Character?.Name);
+        logger.info("Chat room member joined", resp.Character?.Name);
 
         this.leaveReasons.delete(resp.Character.MemberNumber);
 
@@ -394,7 +395,7 @@ export class API_Connector extends EventEmitter {
     };
 
     private onChatRoomSyncMemberLeave = (resp: any) => {
-        logger.log(
+        logger.info(
             `chat room member left with reason ${this.leaveReasons.get(resp.SourceMemberNumber)}`,
             resp,
         );
@@ -412,7 +413,7 @@ export class API_Connector extends EventEmitter {
     };
 
     private onChatRoomSyncRoomProperties = (resp: API_Chatroom_Data) => {
-        logger.log("sync room properties", resp);
+        logger.info("sync room properties", resp);
         this._chatRoom.update(resp);
 
         // sync some data back to the definition of the room we're joined to so that, after
@@ -435,7 +436,7 @@ export class API_Connector extends EventEmitter {
     };
 
     private onChatRoomSyncCharacter = (resp: any) => {
-        //logger.log("sync character", resp);
+        //logger.info("sync character", resp);
         this._chatRoom.characterSync(
             resp.Character.MemberNumber,
             resp.Character,
@@ -444,12 +445,12 @@ export class API_Connector extends EventEmitter {
     };
 
     private onChatRoomSyncReorderPlayers = (resp: ReorderPlayers) => {
-        //logger.log("sync reorder players", resp);
+        //logger.info("sync reorder players", resp);
         this._chatRoom.onReorder(resp.PlayerOrder);
     };
 
     private onChatRoomSyncSingle = (resp: any) => {
-        //logger.log("sync single", resp);
+        //logger.info("sync single", resp);
         this._chatRoom.characterSync(
             resp.Character.MemberNumber,
             resp.Character,
@@ -458,7 +459,7 @@ export class API_Connector extends EventEmitter {
     };
 
     private onChatRoomSyncExpression = (resp: any) => {
-        //logger.log("sync expression", resp);
+        //logger.info("sync expression", resp);
         const char = this.chatRoom.getCharacter(resp.MemberNumber);
         const item = new API_AppearanceItem(char, {
             Group: resp.Group,
@@ -470,7 +471,7 @@ export class API_Connector extends EventEmitter {
     };
 
     private onChatRoomSyncPose = (resp: any) => {
-        //logger.log("got sync pose", resp);
+        //logger.info("got sync pose", resp);
         const char = this.chatRoom.getCharacter(resp.MemberNumber);
         char.update({
             ActivePose: resp.Pose,
@@ -481,23 +482,23 @@ export class API_Connector extends EventEmitter {
     };
 
     private onChatRoomSyncArousal = (resp: any) => {
-        //logger.log("Chat room sync arousal", resp);
+        //logger.info("Chat room sync arousal", resp);
     };
 
     private onChatRoomSyncItem = (update: SyncItemPayload) => {
-        logger.log("Chat room sync item", update);
+        logger.info("Chat room sync item", update);
         this._chatRoom.characterItemUpdate(update.Item);
-        if (update.Item.Target === this._player.MemberNumber) {
-            const payload = {
-                AssetFamily: "Female3DCG",
-                Appearance: this.Player.Appearance.getAppearanceData(),
-            };
-            this.accountUpdate(payload);
-        }
+        //if (update.Item.Target === this._player.MemberNumber) {
+        //    const payload = {
+        //        AssetFamily: "Female3DCG",
+        //        Appearance: this.Player.Appearance.getAppearanceData(),
+        //    };
+        //    this.accountUpdate(payload);
+        //}
     };
 
     private onChatRoomSyncMapData = (update: SyncMapDataPayload) => {
-        logger.log("chat room map data", update);
+        logger.info("chat room map data", update);
         this._chatRoom.mapPositionUpdate(update.MemberNumber, update.MapData);
     };
 
@@ -508,7 +509,7 @@ export class API_Connector extends EventEmitter {
         //  - mod messages
         const filterModList = ["BCXMsg", "BCEMsg", "LSCGMsg", "bctMsg", "MPA", "dogsMsg", "bccMsg", "ECHO_INFO2", "MoonCEBC"];
         if (msg.Type !== "Status" && msg.Type !== "Hidden" && !filterModList.includes(msg.Content)) {
-            logger.log("chat room message", msg);
+            logger.info("chat room message", msg);
         }
 
         const char = this._chatRoom.getCharacter(msg.Sender);
@@ -530,7 +531,7 @@ export class API_Connector extends EventEmitter {
     };
 
     private onChatRoomAllowItem = (resp: ChatRoomAllowItemResponse) => {
-        logger.log("ChatRoomAllowItem", resp);
+        logger.info("ChatRoomAllowItem", resp);
         const promResolve = this.itemAllowQueries.get(resp.MemberNumber);
         if (promResolve) {
             this.itemAllowQueries.delete(resp.MemberNumber);
@@ -539,8 +540,10 @@ export class API_Connector extends EventEmitter {
     };
 
     private onChatRoomCharacterItemUpdate = (update: SingleItemUpdate) => {
-        logger.log("Chat room character item update", update);
+        logger.info("Chat room character item update", update);
         this._chatRoom.characterItemUpdate(update);
+        // Probably need to update the bot appearance
+        //   but not like that.
         /*if (update.Target === this._player.MemberNumber) {
             const payload = {
                 AssetFamily: "Female3DCG",
@@ -562,14 +565,14 @@ export class API_Connector extends EventEmitter {
         }
     };
 
-    private onChatRoomSearchResult = (results: RoomDefinition[]) => {
-        logger.log("Chat room search result", results);
+    private onChatRoomSearchResult = (results: API_Chatroom_Data[]) => {
+        logger.info("Chat room search result", results);
         if (!this.roomSearchPromise) return;
         this.roomSearchPromise.resolve(results);
     };
 
     private onChatRoomSearchResponse = (result: string) => {
-        logger.log("Chat room search (join) response", result);
+        logger.info("Chat room search (join) response", result);
         if (!this.roomJoinPromise) return;
         this.roomJoinPromise.resolve(result);
     };
@@ -596,7 +599,7 @@ export class API_Connector extends EventEmitter {
             this.roomJoinPromise = undefined;
         }
 
-        logger.log("Room joined");
+        logger.info("Room joined");
 
         await this.roomSynced.prom;
         this._player.chatRoom = this._chatRoom;
@@ -608,13 +611,13 @@ export class API_Connector extends EventEmitter {
         return true;
     }
 
-    public async ChatRoomCreate(roomDef: RoomDefinition): Promise<boolean> {
+    public async ChatRoomCreate(roomDef: API_Chatroom_Data): Promise<boolean> {
         if (this.roomCreatePromise) {
             const result = await this.roomCreatePromise.prom;
             return result === "ChatRoomCreated";
         }
 
-        logger.log("creating room");
+        logger.info("creating room");
         this.roomCreatePromise = new PromiseResolve();
 
         try {
@@ -632,7 +635,7 @@ export class API_Connector extends EventEmitter {
             this.roomCreatePromise = undefined;
         }
 
-        logger.log("Room created");
+        logger.info("Room created");
 
         await this.roomSynced.prom;
         this._player.chatRoom = this._chatRoom;
@@ -644,13 +647,13 @@ export class API_Connector extends EventEmitter {
         return true;
     }
 
-    public async joinOrCreateRoom(roomDef: RoomDefinition): Promise<void> {
+    public async joinOrCreateRoom(roomDef: API_Chatroom_Data): Promise<void> {
         await this.loggedIn.prom;
 
         // after a void, we can race between creating the room and other players
         // reappearing and creating it, so we need to try both until one works
         while (true) {
-            logger.log("Trying to join room...", roomDef);
+            logger.info("Trying to join room...", roomDef);
             const joinResult = await this.ChatRoomJoin(roomDef.Name);
             if (joinResult) return;
 
@@ -662,27 +665,27 @@ export class API_Connector extends EventEmitter {
         }
     }
 
-    public async joinOrCreateAnotherRoom(roomDef: RoomDefinition): Promise<boolean> {
+    public async joinOrCreateAnotherRoom(roomDef: API_Chatroom_Data): Promise<boolean> {
         await this.loggedIn.prom;
-        let roomsFound: RoomDefinition[] = [];
+        let roomsFound: API_Chatroom_Data[] = [];
 
         // if we're in a room, we need to leave it first
         if (this._player.chatRoom) {
-            logger.log("Already in a room, leaving the current room...");
+            logger.info("Already in a room, leaving the current room...");
             roomsFound = await this.ChatRoomLeave();
         } else {
-            logger.log("Not in a room, looking for room: '", roomDef.Name, "'");
+            logger.info("Not in a room, looking for room: '", roomDef.Name, "'");
             roomsFound = await this.searchRooms(roomDef.Name);
         }
         // we are now hopefully in no room
         //    we should search for the room we want, to see if we create or join it.
-        logger.debug("Room(s) found: ", roomsFound);
+        logger.debug("Room(s) found.");//, roomsFound);
 
-        logger.log("Looking for our room: ", roomDef.Name);
+        logger.info("Looking for our room: ", roomDef.Name);
         for (const room of roomsFound) {
             if (room.Name === roomDef.Name) {
-                logger.log("Found room: ", roomDef.Name);
-                logger.log("Trying to join...");
+                logger.info("Found room: ", roomDef.Name);
+                logger.info("Trying to join...");
                 const joinResult = await this.ChatRoomJoin(roomDef.Name);
                 if (joinResult) return true;
                 else {
@@ -704,7 +707,7 @@ export class API_Connector extends EventEmitter {
     }
 
     // leave the current room and search the list of rooms, as a player would
-    public async ChatRoomLeave(): Promise<RoomDefinition[]> {
+    public async ChatRoomLeave(): Promise<API_Chatroom_Data[]> {
         this.roomSynced = new PromiseResolve<void>();
         this.wrappedSock.emit("ChatRoomLeave", "");
         this.roomJoined = undefined;
@@ -718,7 +721,7 @@ export class API_Connector extends EventEmitter {
         game: string = "",
         fullRooms: boolean = true,
         showLocked: boolean = true
-    ): Promise<RoomDefinition[]> {
+    ): Promise<API_Chatroom_Data[]> {
         if (this.roomSearchPromise) return await this.roomSearchPromise.prom;
 
         this.roomSearchPromise = new PromiseResolve();
@@ -737,14 +740,14 @@ export class API_Connector extends EventEmitter {
     private async start(): Promise<void> {
         this.started = true;
         await this.loggedIn.prom;
-        logger.log("Logged in.");
+        logger.info("Logged in.");
 
         this.accountUpdate({
             OnlineSharedSettings: {
                 GameVersion: GAMEVERSION,
             },
         });
-        logger.log("Connector started.");
+        logger.info("Connector started.");
     }
 
     public setItemPermission(perm: ItemPermissionLevel): void {
@@ -755,7 +758,7 @@ export class API_Connector extends EventEmitter {
 
     public async setBotDescription(desc: string) {
         await this.loggedIn.prom;
-        logger.debug("setBotDescription: ", desc);
+        //logger.debug("setBotDescription: ", desc);
         try {
             this.accountUpdate({
                 Description: LZSTRING_MAGIC + compressToUTF16(desc),
@@ -783,43 +786,19 @@ export class API_Connector extends EventEmitter {
     }
 
     public updateCharacterItem(update: SingleItemUpdate): void {
-        /*if (update.Target === this.Player.MemberNumber) {
-            const payload = {
-                AssetFamily: "Female3DCG",
-                Appearance: this.Player.Appearance.getAppearanceData(),
-            };
-            this.accountUpdate(payload);
-        } else {*/
-        logger.log("sending ChatRoomCharacterItemUpdate", update);
+        logger.info("sending ChatRoomCharacterItemUpdate", update);
         this.wrappedSock.emit("ChatRoomCharacterItemUpdate", update);
-        //}
     }
 
     public updateCharacter(update: Partial<API_Character_Data>): void {
-        logger.log("sending ChatRoomCharacterUpdate", JSON.stringify(update));
+        logger.info("sending ChatRoomCharacterUpdate", JSON.stringify(update));
         this.wrappedSock.emit("ChatRoomCharacterUpdate", update);
     }
 
 
-    public updateRoom(roomDef: Partial<RoomDefinition>): void {
-        logger.log("sending ChatRoomAdmin", JSON.stringify(roomDef));
-        /*
-                const payload = {
-                    Action: "Update",
-                    MemberNumber: 0,
-                    Room: {
-                        ...roomDef,
-                        //...update,
-                    },
-                } as ChatRoomAdmin;
+    public updateRoom(roomDef: Partial<API_Chatroom_Data>): void {
+        logger.info("sending ChatRoomAdmin", JSON.stringify(roomDef));
 
-                interface ChatRoomAdmin {
-                    Action: "Update" | "MoveLeft" | "MoveRight" | "Kick";
-                    MemberNumber?: number;
-                    Publish?: boolean;
-                    Room?: Partial<RoomDefinition>;
-}
-        */
         try {
             this.wrappedSock.emit("ChatRoomAdmin", {
                 Action: "Update",
@@ -829,13 +808,19 @@ export class API_Connector extends EventEmitter {
                     //...update,
                 }
             } as ChatRoomAdmin,);
+
+            // Update API_Chatroom data localy
+            if (this._chatRoom) {
+                this._chatRoom.update(roomDef);
+                logger.info("Local chatroom data updated: ", roomDef);
+            }
         } catch (e) {
             logger.error("updateRoom: ", e);
         }
     }
 
     public characterPoseUpdate(pose: AssetPoseName[]): void {
-        logger.log("sending pose update", pose);
+        logger.info("sending pose update", pose);
         this.wrappedSock.emit("ChatRoomCharacterPoseUpdate", {
             Pose: pose,
         });
@@ -859,7 +844,7 @@ export class API_Connector extends EventEmitter {
         if (actualUpdate.Appearance === undefined) {
             actualUpdate.Appearance = this.Player.Appearance.getAppearanceData();
         }
-        logger.log("Sending account update", actualUpdate);
+        logger.info("Sending account update", actualUpdate);
         this.wrappedSock.emit("AccountUpdate", actualUpdate);
     }
 

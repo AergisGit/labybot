@@ -16,31 +16,13 @@ import { logger } from './utils/logger';
 import { EventEmitter } from "stream";
 import { API_Character, API_Character_Data } from "./apiCharacter";
 import { API_Connector, CoordObject, SingleItemUpdate } from "./apiConnector";
+import { API_Chatroom_Data } from "@shared/types/bc";
 import { API_Map } from "./apiMap";
 import { API_AppearanceItem } from "./item";
 
 export type ChatRoomAccessVisibility = "All" | "Whitelist" | "Admin";
 
-// This should be ServerChatRoomData
-export interface API_Chatroom_Data {
-    Access: ChatRoomAccessVisibility[];
-    Admin: number[];
-    Background: string;
-    Ban: number[];
-    BlockCategory: ServerChatRoomBlockCategory[];
-    Character?: API_Character_Data[];
-    Description: string;
-    Game: ServerChatRoomGame;
-    Language: ServerChatRoomLanguage;
-    Limit: number;
-    Locked?: boolean;
-    MapData?: ServerChatRoomMapData;
-    Name: string;
-    Private?: boolean;
-    Space: ServerChatRoomSpace;
-    Visibility: ChatRoomAccessVisibility[];
-    Whitelist?: number[];
-}
+
 
 export class API_Chatroom extends EventEmitter {
     private characterCache = new Map<number, API_Character>();
@@ -86,10 +68,10 @@ export class API_Chatroom extends EventEmitter {
     }
 
     public update(data: Partial<API_Chatroom_Data>) {
-        logger.debug("Updating chatroom data with: ", data);
+        //logger.debug("Updating chatroom data with: ", data);
         Object.assign(this.data, data);
 
-        logger.debug("Updating chatroom this.data: ", this.data);
+        //logger.debug("Updating chatroom this.data: ", this.data);
         if (data.MapData) {
             this.map.onMapUpdate();
         }
@@ -122,6 +104,7 @@ export class API_Chatroom extends EventEmitter {
 
         char.update(charData);
 
+        // check if there is removed items to emit an event
         const removed: API_AppearanceItem[] = [];
         for (const oldItem of oldItems) {
             if (
@@ -135,6 +118,8 @@ export class API_Chatroom extends EventEmitter {
         if (removed.length > 0)
             this.emit("ItemRemove", this.getCharacter(sourceMemberNo), removed);
 
+        
+        // check if there is new or changed items to emit an event
         for (const newItem of char.Appearance.Appearance) {
             const oldItem = oldItems.find(
                 (oldItem) => oldItem.Group === newItem.Group,

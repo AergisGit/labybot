@@ -186,7 +186,7 @@ export class PetSpa {
                 "WoodClosed",
             );
         } catch (e) {
-            console.log("Map data not loaded", e);
+            this.log.error("Map data not loaded", e);
         }
     };
 
@@ -274,7 +274,7 @@ export class PetSpa {
         character: API_Character,
     ) => {
         const currentArmItem = character.Appearance.InventoryGet("ItemArms");
-        console.log(
+        this.log.debug(
             `${character} current arm item name: ${currentArmItem?.Name}`,
         );
         if (

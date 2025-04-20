@@ -14,7 +14,7 @@ export abstract class GameInstance {
         try {
             this.log = new Logger(gameInfos.game.toUpperCase(), "debug", true, "blue");
             this.log.info(`New game instance for: ${gameInfos.game} - ${gameInfos.gameName}`);
-        } catch (e) { console.log("Init log:", e); }
+        } catch (e) { console.error("error - Init log:", e); }
         this.commandParser = new CommandParser(conn);
         this.gameInfos = gameInfos;
 

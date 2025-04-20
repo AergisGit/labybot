@@ -15,10 +15,11 @@
 import { logger } from './utils/logger';
 import { decompressFromBase64 } from "lz-string";
 import { API_Character } from "./apiCharacter";
-import { API_Chatroom_Data } from "./apiChatroom";
+//import { API_Chatroom_Data } from "./apiChatroom";
 import { API_Connector, CoordObject } from "./apiConnector";
 import { EventEmitter } from "stream";
 import { ChatRoomMapViewObjectList, ChatRoomMapViewTileList } from "./bcdata/ChatRoomMap";
+import { API_Chatroom_Data } from "@shared/types/bc";
 
 export interface MapRegion {
     TopLeft: CoordObject;
@@ -220,7 +221,7 @@ export class API_Map extends EventEmitter {
             character.MapPos.X === prevPos.X &&
             character.MapPos.Y === prevPos.Y
         ) {
-            logger.log(`Discarding duplicate move event for ${character}`);
+            logger.info(`Discarding duplicate move event for ${character}`);
             return;
         }*/
 

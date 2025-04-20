@@ -145,6 +145,7 @@ export class AppearanceType {
 
     public AddItem(desc: BC_AppearanceItem): API_AppearanceItem {
         const newItem = this.bulkAddItem(desc);
+        this.character.sendAppearanceUpdate();
 
         newItem.queueUpdate();
         return newItem;
@@ -303,9 +304,11 @@ export class AppearanceType {
     }
 
     private bulkAddItem(item: BC_AppearanceItem): API_AppearanceItem {
+        // Delete any existing item in this slot
         this.data = this.data.filter((i) => i.Group !== item.Group);
         this._items = this._items.filter((i) => i.Group !== item.Group);
 
+        // Add the new item to the list
         const newItem = new API_AppearanceItem(this.character, item);
         this._items.push(newItem);
         this.data.push(newItem.getData());

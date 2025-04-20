@@ -22,7 +22,7 @@ import { importBundle } from "../appearance";
 import { CommandParser } from "../commandParser";
 import { Logger } from '../utils/logger';
 import { remainingTimeString, wait } from "../utils/time";
-import { generatePassword } from "../utils/string";
+import { generatePassword, safeStringify } from "../utils/string";
 import { RouletteBet, RouletteGame, ROULETTEHELP } from "./casino/roulette";
 import { CasinoStore, Player } from "./casino/casinostore";
 import { ROULETTE_WHEEL } from "./casino/rouletteWheelBundle";
@@ -30,7 +30,7 @@ import { FORFEITS, forfeitsString, restraintsRemoveString, SERVICES, servicesStr
 import { Cocktail, COCKTAILS } from "./casino/cocktails";
 
 const FREE_CHIPS = 20;
-const TIME_UNTIL_SPIN_MS = 60000;
+const TIME_UNTIL_SPIN_MS = 6000;
 const BET_CANCEL_THRESHOLD_MS = 3000;
 
 function getItemsBlockingForfeit(
@@ -118,6 +118,8 @@ export class Casino {
         this.commandParser = new CommandParser(conn);
         this.gameInfos = gameInfos;
 
+
+        this.log.info("Getting the cocktail of the day...");
         if (this.gameInfos.casino?.cocktail) {
             this.cocktailOfTheDay = COCKTAILS[this.gameInfos.casino.cocktail];
             if (this.cocktailOfTheDay === undefined) {
@@ -125,10 +127,12 @@ export class Casino {
             }
         }
 
+        this.log.info("Setting Listeners...");
         conn.on("CharacterEntered", this.onCharacterEntered);
         conn.on("Beep", this.onBeep);
 
 
+        this.log.info("Registering bot instructions...");
         this.commandParser.register("free", this.onCommandFree);
 
         this.commandParser.register("bet", this.onCommandBet);
@@ -155,44 +159,67 @@ export class Casino {
             this.setTextColor("#ffffff");
         });
 
+
+        this.log.info("Setting up the wheel, sign and script on the bot...");
         this.conn.setItemPermission(ItemPermissionLevel.OwnerOnly);
 
-        // hack because otherwise an account update goes through after this item update and clears the text out
-        setTimeout(() => {
-            const wheel = this.getWheel();
-            wheel.setProperty("Texts", [" ", " ", " ", " ", " ", " ", " ", " "]);
+        this.setItems();
 
-            const sign = this.getSign();
-            sign.setProperty("OverridePriority", { Text: 63 });
-            sign.setProperty("Text", "Place bets!");
-            sign.setProperty("Text2", " ");
-            this.setTextColor("#ffffff");
+        // Probably the bio ? => hack because otherwise an account update goes through after this item update and clears the text out
+        //setTimeout(() => {
+        const wheel = this.getWheel();
+        wheel.setProperty("Texts", [" ", " ", " ", " ", " ", " ", " ", " "]);
 
-            this.setBio().catch((e) => {
-                this.log.error("Failed to set bio.", e);
-            });
+        const sign = this.getSign();
+        sign.setProperty("OverridePriority", { Text: 63 });
+        sign.setProperty("Text", "Place bets!");
+        sign.setProperty("Text2", " ");
+        this.setTextColor("#ffffff");
 
-            this.conn.setScriptPermissions(true, false);
+        this.setBio().catch((e) => {
+            this.log.error("Failed to set bio.", e);
+        });
 
-            const scriptItem = this.conn.Player.Appearance.AddItem(AssetGet("ItemScript", "Script"));
-            scriptItem.setProperty("Hide", ['Height', 'BodyUpper', 'ArmsLeft', 'ArmsRight', 'HandsLeft', 'HandsRight', 'BodyLower', 'HairFront', 'HairBack', 'Eyebrows', 'Eyes', 'Eyes2', 'Mouth', 'Nipples', 'Pussy', 'Pronouns', 'Head', 'Blush', 'Fluids', 'Emoticon', 'ItemNeck', 'ItemHead', 'Cloth', 'Bra', 'Socks', 'Shoes', 'ClothAccessory', 'Necklace', 'ClothLower', 'Panties', 'Suit', 'Gloves']);
-        }, 500);
+        this.conn.setScriptPermissions(true, false);
+
+        const scriptItem = this.conn.Player.Appearance.AddItem(AssetGet("ItemScript", "Script"));
+        scriptItem.setProperty("Hide", ['Height', 'BodyUpper', 'ArmsLeft', 'ArmsRight', 'HandsLeft', 'HandsRight', 'BodyLower', 'HairFront', 'HairBack', 'Eyebrows', 'Eyes', 'Eyes2', 'Mouth', 'Nipples', 'Pussy', 'Pronouns', 'Head', 'Blush', 'Fluids', 'Emoticon', 'ItemNeck', 'ItemHead', 'Cloth', 'Bra', 'Socks', 'Shoes', 'ClothAccessory', 'Necklace', 'ClothLower', 'Panties', 'Suit', 'Gloves']);
+        //}, 500);
+
+
+        this.log.debug("Casino constructed.");
     }
 
     public async init(): Promise<void> {
+        this.log.info("Casino initializing...");
+
+        if (!this.conn.chatRoom ) {
+            this.log.error("Chat room is not available.");
+            return;
+        }
+
+        this.log.info("Updating room...");
         // Mise en place initiale de la salle
         try {
-            this.log.info("Joining room: ", this.gameInfos.room.Name);
-            await this.conn.joinOrCreateAnotherRoom(this.gameInfos.room);
+            // Check if we are in the right room first
+            if (this.conn.chatRoom && this.conn.chatRoom.Name !== this.gameInfos.room.Name) {
+                this.log.info("Not in the right room.");
+                this.log.info("Changing room: ", this.gameInfos.room.Name);
+                await this.conn.joinOrCreateAnotherRoom(this.gameInfos.room);
+            }
         } catch (e) {
             this.log.error("Failed to join or create room: ", e);
         }
 
-        if (!this.conn.chatRoom || !this.conn.chatRoom.characters) {
+        if (!this.conn.chatRoom.characters) {
             this.log.error("Chat room or characters list is not available.");
             return;
         }
 
+        this.updateRoomFromGameInfos();
+
+        
+        this.log.info("Giving free chips...");
         const characters: API_Character[] = this.conn.chatRoom.characters;
         for (const character of characters) {
             try {
@@ -201,8 +228,12 @@ export class Casino {
                 this.log.error(`Failed to give free chips to someone: `, e);
             }
         }
+        this.conn.SendMessage("Chat", `Deer players, the casino is now opened!`);
+
+        this.log.info("Casino Initialized.");
     }
 
+    // Stop the casino to allow another game to start, or the casino to be reloaded
     public async stop(): Promise<void> {
         if (this.rouletteState === "Stopping") {
             this.log.info("Casino is already stopping.");
@@ -280,24 +311,59 @@ export class Casino {
         this.willSpinAt = undefined;
         this.lockedItems.clear();
 
-        // Wait 2secs to let the db sessions to end.
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-
-        // Log or notify that the casino has been stopped
-        this.conn.SendMessage("Chat", `Deer players, the casino is now closed. Thanks for playing!`);
-        
         // Remove the wheel, sign and the script that makes the character mostly invisible
         this.conn.Player.Appearance.RemoveItem("ItemDevices");
         this.conn.Player.Appearance.RemoveItem("ItemMisc");
         this.conn.Player.Appearance.RemoveItem("ItemScript");
 
+        // Log or notify that the casino has been stopped
+        this.conn.SendMessage("Chat", `Deer players, the casino is now closed. Thanks for playing!`);
+
+        // Wait 2secs to let the db sessions to end, and the items to be removed safely.
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+
         this.log.info("Casino has been stopped and all resources have been released.");
+    }
+
+
+    public updateRoomFromGameInfos(): void {
+        if (!this.gameInfos.room) {
+            this.log.error("No room data available in gameInfos to update.");
+            return;
+        }
+
+        // Exemple : mise à jour du nom et de la description de la room
+        const roomUpdate = {
+            Name: this.gameInfos.room.Name,
+            Description: this.gameInfos.room.Description,
+            Visibility: this.gameInfos.room.Visibility,
+            Access: this.gameInfos.room.Access,
+        };
+
+        this.log.info("Updating room with data: ", roomUpdate);
+        this.conn.updateRoom(roomUpdate);
+    }
+
+    private setItems(): void {
+        // set sign
+        const sign = this.conn.Player.Appearance.AddItem(
+            AssetGet("ItemMisc", "WoodenSign"),
+        );
+        sign.setProperty("Text", "");
+        sign.setProperty("Text2", "");
+
+        // set wheel
+        this.conn.Player.Appearance.applyBundle(ROULETTE_WHEEL);
+    
     }
 
     private getSign(): API_AppearanceItem {
         let sign = this.conn.Player.Appearance.InventoryGet("ItemMisc");
+        //this.log.debug("getSign: ", safeStringify(sign));
+
         if (!sign) {
-            sign = this.conn.Player.Appearance.AddItem(
+            this.log.warn("getSign: has to recreate it");
+            const sign = this.conn.Player.Appearance.AddItem(
                 AssetGet("ItemMisc", "WoodenSign"),
             );
             sign.setProperty("Text", "");
@@ -307,12 +373,15 @@ export class Casino {
     }
 
     private getWheel(): API_AppearanceItem {
-        const wheel = this.conn.Player.Appearance.InventoryGet("ItemDevices");
-        if (wheel) {
-            return wheel;
+        let wheel = this.conn.Player.Appearance.InventoryGet("ItemDevices");
+        //this.log.debug("getWheel: ", safeStringify(wheel));
+
+        if (!wheel) {
+            this.log.warn("getwheel: has to recreate it");
+            this.conn.Player.Appearance.applyBundle(ROULETTE_WHEEL);
+            const wheel = this.conn.Player.Appearance.InventoryGet("ItemDevices");
         }
-        this.conn.Player.Appearance.applyBundle(ROULETTE_WHEEL);
-        return this.conn.Player.Appearance.InventoryGet("ItemDevices");
+        return wheel;
     }
 
     private setTextColor(color: string): void {
@@ -572,7 +641,18 @@ export class Casino {
             return;
         }
 
+        this.log.debug(`Removing ${restraint.name} from ${sender}`);
+        this.log.debug(`items(): `, restraint.items());
+        this.log.debug(`items()[0]: `, restraint.items()[0]);
+
         if (!sender.Appearance.InventoryGet(restraint.items()[0].Group)) {
+            this.log.debug(
+                `Player ${sender} doesn't have ${restraint.items()[0].Group}, has: `,
+                sender.Appearance.allItems().map((item) => ({
+                    Group: item.Group,
+                    Name: item.Name,
+                }))
+            );
             this.conn.reply(msg, `It doesn't look like you're wearing ${restraint.name}.`);
             return;
         }
@@ -854,6 +934,9 @@ export class Casino {
         this.rouletteGame.clear();
         this.rouletteState = "Resetting";
         this.log.debug("rouletteState: ", this.rouletteState);
+
+        // setBio will send an account update.
+        //   The others items must be synchronised first.
         await this.setBio();
     }
 

@@ -12,9 +12,10 @@
  * limitations under the License.
  */
 import { readFile } from "fs/promises";
-import { RoomDefinition } from "../../apiConnector";
+//import { RoomDefinition } from "../../apiConnector";
+import { API_Chatroom_Data } from "@shared/types/bc";
 import { CasinoConfig } from "../../games/casino";
-import { Laby } from "../../games/laby";
+//import { Laby } from "../../games/laby";
 
 export interface ConfigFile {
 
@@ -32,7 +33,7 @@ export interface ConfigFile {
     mongo_db?: string;
 
     superusers?: number[];
-    room?: RoomDefinition;
+    room?: API_Chatroom_Data;
 
     casino?: CasinoConfig;
 }

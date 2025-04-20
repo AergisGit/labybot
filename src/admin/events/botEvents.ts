@@ -4,7 +4,7 @@ import { logger } from '../../utils/logger';
 
 export const registerBotEvents = (socket: Socket, gameManager: GameManager) => {
     socket.on('startBot', async ({ botId }: { botId: number }) => {
-        logger.log(`Received startBot event for botId: ${botId}`);
+        logger.info(`Received startBot event for botId: ${botId}`);
         try {
             const result = await gameManager.startBot(botId);
             socket.emit('botStarted', { botId, result });

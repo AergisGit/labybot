@@ -96,7 +96,7 @@ export class CommandParser {
                     const promiseRet = ret as Promise<void>;
                     if (promiseRet.catch) {
                         promiseRet.catch((e) => {
-                            logger.log("Command handler threw async exception", e);
+                            logger.warn("Command handler threw async exception", e);
                         });
                     }
                 } catch (e) {

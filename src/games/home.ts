@@ -23,6 +23,7 @@ import { BC_Server_ChatRoomMessage } from "../logicEvent";
 import { wait } from "../utils/time";
 import { GameInstance } from "./gameInstance";
 import { GameInfosData } from "@shared/types/game";
+import { API_Chatroom_Data } from "@shared/types/bc";
 
 // Parametrage pour la cartes
 
@@ -271,37 +272,36 @@ export class Home extends GameInstance {
     // Ici on ne met à jour que la MAP, mais on pourrait ouvrir, fermer, choisir le nombre de places, changer la whitelist, etc.
     protected setupRoom = async () => {
         try {
-            const roomInfos: RoomDefinition = {
-                Access: this.gameInfos.room.Access,
-                Admin: this.gameInfos.room.Admin,
-                Background: this.gameInfos.room.Background,
-                Ban: this.gameInfos.room.Ban,
-                BlockCategory: this.gameInfos.room.BlockCategory,
-                Description: this.gameInfos.room.Description,
-                Game: this.gameInfos.room.Game,
-                Language: this.gameInfos.room.Language,
-                Limit: this.gameInfos.room.Limit,
-                Name: this.gameInfos.room.Name,
-                Space: this.gameInfos.room.Space,
-                Visibility: this.gameInfos.room.Visibility,
-                Whitelist: []
-            };
-            this.log.debug("Updating room with roomInfos: ");
-            await wait(2000);
-            this.conn.updateRoom(roomInfos);
-            
+            this.updateRoomFromGameInfos()
+
             // Chargement de la carte, en fonction de si la secretRoom doti etre ouverte ou non
             if (this.secretRoomOpen === true) {
                 this.conn.chatRoom.map.setMapFromString(MAPBatCave);
             } else {
                 this.conn.chatRoom.map.setMapFromString(MAP);
             }
-            
-            
         } catch (e) {
             this.log.warn("Map data not loaded", e);
         }
     };
+
+    public updateRoomFromGameInfos(): void {
+        if (!this.gameInfos.room) {
+            this.log.error("No room data available in gameInfos to update.");
+            return;
+        }
+    
+        // Exemple : mise à jour du nom et de la description de la room
+        const roomUpdate = {
+            Name: this.gameInfos.room.Name,
+            Description: this.gameInfos.room.Description,
+            Visibility: this.gameInfos.room.Visibility,
+            Access: this.gameInfos.room.Access,
+        };
+    
+        this.log.info("Updating room with data: ", roomUpdate);
+        this.conn.updateRoom(roomUpdate);
+    }
 
     protected setupCharacter = async () => {
         this.conn.moveOnMap(BOT_POSITION.X, BOT_POSITION.Y);

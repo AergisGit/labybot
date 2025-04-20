@@ -15,7 +15,8 @@
 import { compressToBase64 } from "lz-string";
 import { Logger } from '../utils/logger';
 import { API_Connector } from "../apiConnector";
-import { API_Chatroom_Data } from "../apiChatroom";
+//import { API_Chatroom_Data } from "../apiChatroom";
+import { API_Chatroom_Data } from "@shared/types/bc";
 import { ConfigFile } from "./config/config";
 import { Db, MongoClient } from "mongodb";
 

@@ -4,7 +4,8 @@ import { Logger } from '../utils/logger';
 import { BotInfos } from "@shared/types/bot";
 import { GameInfosData } from "@shared/types/game";
 import { API_Connector, RoomDefinition } from '../apiConnector'
-import { API_Chatroom, API_Chatroom_Data, ChatRoomAccessVisibility } from "../apiChatroom";
+import { API_Chatroom, ChatRoomAccessVisibility } from "../apiChatroom";
+import { API_Chatroom_Data } from "@shared/types/bc";
 import { Dare } from "../games/dare";
 import { PetSpa } from "../games/petspa";
 import { Home } from "../games/home";
@@ -384,7 +385,7 @@ export class GameManager extends EventEmitter {
             // Getting into the game's room, and updating it
             /*
             this.log.debug(`Preparing roomInfos {gameInfos.room.Name}...`);
-            const roomInfos: RoomDefinition = {
+            const roomInfos: API_Chatroom_Data = {
                 Name: gameInfos.room.Name,
                 Description: gameInfos.room.Description,
                 Background: gameInfos.room.Background,
@@ -401,7 +402,7 @@ export class GameManager extends EventEmitter {
             this.log.debug("Updating room with roomInfos: ");
             connector.updateRoom(roomInfos);
             */
-           
+
             this.log.debug(`Choosing game to start.`);
             switch (game) {
 

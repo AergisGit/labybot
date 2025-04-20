@@ -16,7 +16,7 @@ export interface GameInfosData {
   game: string;
   gameName: string;
 
-  room?: RoomDefinition;
+  room?: API_Chatroom_Data;
   botDescription?: string[];
 
   map?: string;

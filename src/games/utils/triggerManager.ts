@@ -76,7 +76,7 @@ export class TriggerManager {
     // The callback that will handle the trigger when it's activated
     const triggerCallback = ((data) => {
       return (character: any) => {
-        logger.debug(`${data.name} triggered! Action: ${data.actions}`);
+        //logger.debug(`${data.name} triggered! Action: ${data.actions}`);
         callback(character, data); // Utilise bien la copie locale "data"
       };
     })(triggerData);

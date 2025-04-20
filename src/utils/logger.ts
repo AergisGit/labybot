@@ -42,7 +42,7 @@ export class Logger extends Console {
 
     constructor(
         context: string = 'GLOB',
-        level: loglevel = 'info',
+        level: loglevel = 'debug',
         isEnabled: boolean = true,
         contextColor: logColor = 'magenta'
     ) {
